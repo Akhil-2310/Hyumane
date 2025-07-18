@@ -5,7 +5,11 @@ export default function LandingPage() {
     <div className="min-h-screen" style={{ backgroundColor: "#fff6c9", color: "#000000" }}>
       {/* Navbar */}
       <nav className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
-        <div className="text-2xl font-bold">Hyumane</div>
+        <div className="flex items-center space-x-3">
+          <img src="/logo.png" alt="Hyumane Logo" className="h-16 w-16" />
+          <span className="text-2xl font-bold">Hyumane</span>
+        </div>
+
         <Link
           href="/verify"
           className="px-6 py-2 rounded-lg font-medium transition-colors"
@@ -15,10 +19,11 @@ export default function LandingPage() {
         </Link>
       </nav>
 
+
       {/* Hero Section */}
       <section className="px-6 py-20 text-center max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-bold mb-6">
-          A Digital Space for <span style={{ color: "#1c7f8f" }}>Real People</span>
+          A Digital Space for <span className="block mt-2" style={{ color: "#1c7f8f" }}>Real People</span>
         </h1>
         <p className="text-xl md:text-2xl mb-8 text-gray-700">
           By humans, for humans. Connect authentically in a verified community where every person is real.
@@ -43,10 +48,9 @@ export default function LandingPage() {
             >
               <span className="text-2xl text-white">🔐</span>
             </div>
-            <h3 className="text-xl font-bold mb-3">Authentic Verification</h3>
+            <h3 className="text-xl font-bold mb-3">Reputation-Based</h3>
             <p className="text-gray-700">
-              Every member is verified as a real human being. No bots, no fake accounts, just genuine connections
-              between real people.
+              Build trust through meaningful interactions. Quality connections over quantity followers.
             </p>
           </div>
 
@@ -59,8 +63,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-bold mb-3">Human-Centered Design</h3>
             <p className="text-gray-700">
-              Built by humans who understand human needs. Our platform prioritizes meaningful interactions over
-              engagement metrics.
+              No AI, no bots, no automation. Just real people sharing genuine moments and thoughts.
             </p>
           </div>
 
@@ -71,10 +74,9 @@ export default function LandingPage() {
             >
               <span className="text-2xl text-white">🌱</span>
             </div>
-            <h3 className="text-xl font-bold mb-3">Privacy First</h3>
+            <h3 className="text-xl font-bold mb-3">Cozy Community</h3>
             <p className="text-gray-700">
-              Your data belongs to you. We believe in transparency, consent, and giving you full control over your
-              digital presence.
+              Like a neighborhood café where everyone knows your name. Intimate, warm, and welcoming.
             </p>
           </div>
         </div>
@@ -82,9 +84,10 @@ export default function LandingPage() {
 
       {/* What Makes Us Different */}
       <section className="px-6 py-16 bg-white/30">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-12">What Makes Us Different</h2>
-          <div className="space-y-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {/* Feature 1 */}
             <div className="flex items-start space-x-4">
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -93,13 +96,46 @@ export default function LandingPage() {
                 <span className="text-white font-bold">✓</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-2">Passport Verification</h3>
+                <h3 className="text-xl font-bold mb-2">Chronological Feed</h3>
                 <p className="text-gray-700">
-                  Advanced QR code verification ensures every user is a verified human being with legitimate identity.
+                  See posts in the order they were shared, not by algorithm manipulation.
                 </p>
               </div>
             </div>
 
+            {/* Feature 2 */}
+            <div className="flex items-start space-x-4">
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                style={{ backgroundColor: "#1c7f8f" }}
+              >
+                <span className="text-white font-bold">✓</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Meaningful Connections</h3>
+                <p className="text-gray-700">
+                  One-to-one chats and thoughtful interactions, not broadcast shouting.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="flex items-start space-x-4">
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                style={{ backgroundColor: "#1c7f8f" }}
+              >
+                <span className="text-white font-bold">✓</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Verified Humans</h3>
+                <p className="text-gray-700">
+                  Every member is verified as a real person during our joining process.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 4 */}
             <div className="flex items-start space-x-4">
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -110,12 +146,12 @@ export default function LandingPage() {
               <div>
                 <h3 className="text-xl font-bold mb-2">Quality Over Quantity</h3>
                 <p className="text-gray-700">
-                  Focus on meaningful connections rather than follower counts. Build genuine relationships with real
-                  people.
+                  Small, curated community focused on genuine relationships.
                 </p>
               </div>
             </div>
 
+            {/* Feature 5 */}
             <div className="flex items-start space-x-4">
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -124,13 +160,14 @@ export default function LandingPage() {
                 <span className="text-white font-bold">✓</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-2">Ad-Free Experience</h3>
+                <h3 className="text-xl font-bold mb-2">Privacy First</h3>
                 <p className="text-gray-700">
-                  No algorithms pushing content for profit. Your feed shows what matters to you and your connections.
+                  Every member is verified as a real person during our joining process.
                 </p>
               </div>
             </div>
 
+            {/* Feature 6 */}
             <div className="flex items-start space-x-4">
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -139,15 +176,16 @@ export default function LandingPage() {
                 <span className="text-white font-bold">✓</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-2">Direct Communication</h3>
+                <h3 className="text-xl font-bold mb-2">Mindful Design</h3>
                 <p className="text-gray-700">
-                  Built-in chat features allow for private, secure conversations between verified community members.
+                  Built to encourage thoughtful sharing, not endless scrolling.
                 </p>
               </div>
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Footer */}
       <footer className="px-6 py-12 border-t border-gray-200">
@@ -168,7 +206,7 @@ export default function LandingPage() {
               Help Center
             </a>
           </div>
-          <div className="mt-6 text-sm text-gray-500">© 2024 Hyumane. All rights reserved.</div>
+          <div className="mt-6 text-sm text-gray-500">© 2025 Hyumane. All rights reserved.</div>
         </div>
       </footer>
     </div>
