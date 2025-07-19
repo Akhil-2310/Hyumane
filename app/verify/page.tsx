@@ -48,6 +48,15 @@ export default function VerifyPage() {
 
   const handleVerificationSuccess = () => {
     console.log("Verification successful!");
+    
+    // Store basic verified user data for profile creation
+    localStorage.setItem('verifiedUserData', JSON.stringify({
+      userId: userId,
+      verifiedName: '', // Will be filled in profile creation
+      isVerified: true,
+      verificationDate: new Date().toISOString()
+    }));
+    
     setIsVerified(true)
     setVerificationError(null)
   }

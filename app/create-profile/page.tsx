@@ -2,27 +2,53 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createProfile } from "@/lib/supabase-actions"
 
+interface VerifiedUserData {
+  userId: string;
+  verifiedName: string;
+  isVerified: boolean;
+  verificationDate: string;
+}
+
 export default function CreateProfilePage() {
   const [formData, setFormData] = useState({
-    fullName: "",
     username: "",
     bio: "",
-    location: "",
     interests: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [verifiedUserData, setVerifiedUserData] = useState<VerifiedUserData | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    // Load verified user data from localStorage
+    const storedData = localStorage.getItem('verifiedUserData');
+    if (storedData) {
+      const userData: VerifiedUserData = JSON.parse(storedData);
+      setVerifiedUserData(userData);
+    } else {
+      // If no verification data, redirect to verification
+      router.push('/verify');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      await createProfile(formData)
+      await createProfile({
+        ...formData,
+        verifiedUserId: verifiedUserData?.userId || '',
+        isVerified: verifiedUserData?.isVerified || false,
+        verificationDate: verifiedUserData?.verificationDate || ''
+      })
+      
+      // Clear verification data after successful profile creation
+      localStorage.removeItem('verifiedUserData');
       router.push("/feed")
     } catch (error) {
       console.error("Error creating profile:", error)
@@ -44,25 +70,20 @@ export default function CreateProfilePage() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Create Your Profile</h1>
-            <p className="text-gray-600">Tell the community about yourself</p>
+            <p className="text-gray-600">Set up your Hyumane identity</p>
+            
+            {verifiedUserData && (
+              <div 
+                className="mt-4 p-3 rounded-lg flex items-center justify-center space-x-2"
+                style={{ backgroundColor: "#f0fdf4", color: "#166534" }}
+              >
+                <span className="text-lg">✓</span>
+                <span className="font-medium">Identity Verified</span>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
                 Username
@@ -74,7 +95,7 @@ export default function CreateProfilePage() {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 placeholder="@username"
               />
             </div>
@@ -89,23 +110,8 @@ export default function CreateProfilePage() {
                 value={formData.bio}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 placeholder="Tell us about yourself..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="City, Country"
               />
             </div>
 
@@ -119,7 +125,7 @@ export default function CreateProfilePage() {
                 name="interests"
                 value={formData.interests}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 placeholder="Photography, Travel, Technology..."
               />
             </div>
@@ -127,7 +133,7 @@ export default function CreateProfilePage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="w-full py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 hover:opacity-90"
               style={{ backgroundColor: "#1c7f8f", color: "white" }}
             >
               {isLoading ? "Creating Profile..." : "Create Profile"}

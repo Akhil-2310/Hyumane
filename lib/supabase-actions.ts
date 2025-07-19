@@ -1,19 +1,21 @@
 import { supabase } from "./supabase"
 
 export async function createProfile(profileData: {
-  fullName: string
   username: string
   bio: string
-  location: string
   interests: string
+  verifiedUserId?: string
+  isVerified?: boolean
+  verificationDate?: string
 }) {
   const { data, error } = await supabase.from("profiles").insert([
     {
-      full_name: profileData.fullName,
       username: profileData.username,
       bio: profileData.bio,
-      location: profileData.location,
       interests: profileData.interests,
+      verified_user_id: profileData.verifiedUserId,
+      is_verified: profileData.isVerified || false,
+      verification_date: profileData.verificationDate,
       created_at: new Date().toISOString(),
     },
   ])
