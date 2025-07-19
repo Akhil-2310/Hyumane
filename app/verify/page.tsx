@@ -1,25 +1,78 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { getUniversalLink } from '@selfxyz/core';
+import { SelfQRcodeWrapper, SelfAppBuilder,type SelfApp } from '@selfxyz/qrcode';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function VerifyPage() {
-  const [isScanning, setIsScanning] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState(false)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
+  const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
+  const [universalLink, setUniversalLink] = useState("");
   const router = useRouter()
 
-  const handleScan = () => {
-    setIsScanning(true)
-    // Simulate QR scanning process
-    setTimeout(() => {
-      setIsScanning(false)
-      setIsVerified(true)
-    }, 3000)
+  // Create the SelfApp configuration
+  useEffect(() => {
+    try {
+      const newUserId = uuidv4();
+      setUserId(newUserId);
+      
+      const app = new SelfAppBuilder({
+        version: 2,
+        appName: "Hyumane",
+        scope: "hyumane",
+        endpoint: "https://5a88586c8e57.ngrok-free.app/api/verify",
+        logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
+        userId: newUserId,
+        endpointType: "staging_https",
+        userIdType: "uuid",
+        userDefinedData: "Welcome to Hyumane!",
+        devMode: true,
+        disclosures: {
+          minimumAge: 5,
+          name: true,
+          ofac: false,
+          excludedCountries: [],
+        }
+      }).build();
+      setSelfApp(app);
+      setUniversalLink(getUniversalLink(app));
+    } catch (error) {
+      console.error("Failed to initialize Self app:", error);
+    }
+  }, []);
+
+  const handleVerificationSuccess = () => {
+    console.log("Verification successful!");
+    setIsVerified(true)
+    setVerificationError(null)
+  }
+
+  const handleVerificationError = (error: any) => {
+    const errorCode = error.error_code || 'Unknown';
+    const reason = error.reason || 'Unknown error';
+    console.error(`Error ${errorCode}: ${reason}`);
+    setVerificationError(`Verification failed: ${reason}`)
   }
 
   const handleContinue = () => {
     router.push("/create-profile")
+  }
+
+  // Don't render until we have a userId and selfApp
+  if (!userId || !selfApp) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -31,36 +84,44 @@ export default function VerifyPage() {
               Hyumane
             </Link>
             <h1 className="text-2xl font-bold mt-4 mb-2">Verify Your Identity</h1>
-            <p className="text-gray-600">Scan your passport QR code to verify you're a real human</p>
+            <p className="text-gray-600">Scan this QR code with the Self app to verify you're a real human</p>
           </div>
 
           {!isVerified ? (
             <div className="text-center">
-              <div className="w-48 h-48 mx-auto mb-6 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                {isScanning ? (
-                  <div className="text-center">
-                    <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Scanning...</p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">📱</div>
-                    <p className="text-sm text-gray-600">QR Scanner</p>
-                  </div>
-                )}
+              <div className="mb-6">
+                <SelfQRcodeWrapper
+                 selfApp={selfApp}
+                  onSuccess={handleVerificationSuccess}
+                  onError={handleVerificationError}
+                  size={300}
+                />
               </div>
 
-              <button
-                onClick={handleScan}
-                disabled={isScanning}
-                className="w-full py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ backgroundColor: "#1c7f8f", color: "white" }}
-              >
-                {isScanning ? "Scanning..." : "Start Passport Scan"}
-              </button>
+              {verificationError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {verificationError}
+                </div>
+              )}
+
+              <div className="text-center mb-4">
+                <p className="text-xs text-gray-500">
+                  Your passport data is encrypted and only used for verification
+                </p>
+              </div>
+
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-sm mb-2">How it works:</h3>
+                <ol className="text-xs text-gray-600 space-y-1">
+                  <li>1. Download the Self app</li>
+                  <li>2. Scan your passport with the app</li>
+                  <li>3. Scan the QR code above</li>
+                  <li>4. Get verified as a real human</li>
+                </ol>
+              </div>
 
               <p className="text-xs text-gray-500 mt-4">
-                Your passport data is encrypted and only used for verification
+                User ID: {userId.substring(0, 8)}...
               </p>
             </div>
           ) : (
