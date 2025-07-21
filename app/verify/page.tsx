@@ -25,7 +25,7 @@ export default function VerifyPage() {
         version: 2,
         appName: "Hyumane",
         scope: "hyumane",
-        endpoint: "https://5a88586c8e57.ngrok-free.app/api/verify",
+        endpoint: "https://d81b6b0e9990.ngrok-free.app/api/verify",
         logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
         userId: newUserId,
         endpointType: "staging_https",
@@ -49,16 +49,17 @@ export default function VerifyPage() {
   const handleVerificationSuccess = () => {
     console.log("Verification successful!");
     
-    // Store basic verified user data for profile creation
+    const verificationDate = new Date().toISOString();
+    
+    // Store basic verified user data for session management
     localStorage.setItem('verifiedUserData', JSON.stringify({
       userId: userId,
-      verifiedName: '', // Will be filled in profile creation
       isVerified: true,
-      verificationDate: new Date().toISOString()
+      verificationDate: verificationDate
     }));
     
-    setIsVerified(true)
-    setVerificationError(null)
+    setIsVerified(true);
+    setVerificationError(null);
   }
 
   const handleVerificationError = (error: any) => {
@@ -69,6 +70,7 @@ export default function VerifyPage() {
   }
 
   const handleContinue = () => {
+    // Check if user has profile, if not go to create-profile, if yes go to feed
     router.push("/create-profile")
   }
 
@@ -143,6 +145,7 @@ export default function VerifyPage() {
               </div>
               <h2 className="text-xl font-bold mb-2">Verification Complete!</h2>
               <p className="text-gray-600 mb-6">Welcome to Hyumane. You're now verified as a real human.</p>
+              
               <button
                 onClick={handleContinue}
                 className="w-full py-3 px-4 rounded-lg font-medium transition-colors"
