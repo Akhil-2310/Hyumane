@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createProfile } from "@/lib/supabase-actions"
+import { uploadAvatar } from "@/lib/supabase-actions"
 
 interface VerifiedUserData {
   userId: string;
@@ -21,6 +22,8 @@ export default function CreateProfilePage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [verifiedUserData, setVerifiedUserData] = useState<VerifiedUserData | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -40,15 +43,22 @@ export default function CreateProfilePage() {
     setIsLoading(true)
 
     try {
+      let avatarUrl: string | undefined;
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar(avatarFile, verifiedUserData!.userId);
+      }
       await createProfile({
         ...formData,
-        verifiedUserId: verifiedUserData?.userId || '',
+        verifiedUserId: verifiedUserData!.userId,
         isVerified: verifiedUserData?.isVerified || false,
-        verificationDate: verifiedUserData?.verificationDate || ''
-      })
+        verificationDate: verifiedUserData?.verificationDate || '',
+        avatarUrl,
+      });
       
-      // Clear verification data after successful profile creation
-      localStorage.removeItem('verifiedUserData');
+      // Keep verification data for session
+      // Don't clear it here - the feed page needs it too
+      console.log("done");
+      
       router.push("/feed")
     } catch (error) {
       console.error("Error creating profile:", error)
@@ -63,6 +73,16 @@ export default function CreateProfilePage() {
       [e.target.name]: e.target.value,
     })
   }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAvatarFile(file);
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file));
+    } else {
+      setAvatarPreview(null);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fff6c9" }}>
@@ -130,9 +150,43 @@ export default function CreateProfilePage() {
               />
             </div>
 
+            <div>
+              <label htmlFor="avatar" className="block text-sm font-medium mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center space-x-4">
+                {/* Hidden native file input */}
+                <input
+                  type="file"
+                  id="avatar"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {/* Styled button that triggers the input */}
+                <label
+                  htmlFor="avatar"
+                  className="px-4 py-2 rounded-lg font-medium cursor-pointer transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#1c7f8f", color: "white" }}
+                >
+                  {avatarFile ? "Change file" : "Choose file"}
+                </label>
+
+                {/* File name or placeholder */}
+                <span className="text-sm text-gray-600 italic truncate max-w-[160px]">
+                  {avatarFile ? avatarFile.name : "No file chosen"}
+                </span>
+              </div>
+
+              {avatarPreview && (
+                <img src={avatarPreview} alt="preview" className="mt-4 w-24 h-24 rounded-full object-cover" />
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={!formData.username.trim() || isLoading}
               className="w-full py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 hover:opacity-90"
               style={{ backgroundColor: "#1c7f8f", color: "white" }}
             >
