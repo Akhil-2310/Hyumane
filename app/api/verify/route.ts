@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     console.log("- signals (final):", signals ? "present" : "missing");
     console.log("- userContextData:", userContextData ? "present" : "missing");
     console.log("- All body keys:", Object.keys(body));
+    
 
     if (!proof || !signals || !attestationId || !userContextData) {
       console.log("❌ Missing required parameters");
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     const selfBackendVerifier = new SelfBackendVerifier(
       "hyumane",
-      "https://5a88586c8e57.ngrok-free.app/api/verify",
+      "https://d81b6b0e9990.ngrok-free.app/api/verify",
       true, // dev mode
       AllIds,
       configStore,
