@@ -25,7 +25,7 @@ export default function VerifyPage() {
         version: 2,
         appName: "Hyumane",
         scope: "hyumane",
-        endpoint: "https://d81b6b0e9990.ngrok-free.app/api/verify",
+        endpoint: "https://c5c739934328.ngrok-free.app/api/verify",
         logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
         userId: newUserId,
         endpointType: "staging_https",
@@ -34,7 +34,6 @@ export default function VerifyPage() {
         devMode: true,
         disclosures: {
           minimumAge: 5,
-          name: true,
           ofac: false,
           excludedCountries: [],
         }
