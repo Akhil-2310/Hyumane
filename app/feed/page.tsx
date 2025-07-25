@@ -5,13 +5,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { getPosts, createPost, getUserProfile } from "@/lib/supabase-actions"
+import { getPosts, createPost, getUserProfile, isFollowing, followUser, unfollowUser } from "@/lib/supabase-actions"
 
 interface Post {
   id: string
   content: string
   username: string
   avatar: string | null
+  author_id: string
   created_at: string
   likes: number
 }
@@ -31,6 +32,7 @@ export default function FeedPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [userLoading, setUserLoading] = useState(true)
+  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({})
   const router = useRouter()
 
   useEffect(() => {
@@ -96,8 +98,20 @@ export default function FeedPage() {
 
   const loadPosts = async () => {
     try {
-      const fetchedPosts = await getPosts()
+      // Pass current user ID to get filtered posts
+      const fetchedPosts = await getPosts(currentUser?.id)
       setPosts(fetchedPosts)
+      
+      // Check following status for all post authors
+      if (currentUser) {
+        const followingMap: Record<string, boolean> = {}
+        for (const post of fetchedPosts) {
+          if (post.author_id !== currentUser.id) {
+            followingMap[post.author_id] = await isFollowing(currentUser.id, post.author_id)
+          }
+        }
+        setFollowingStatus(followingMap)
+      }
     } catch (error) {
       console.error("Error loading posts:", error)
     } finally {
@@ -116,6 +130,7 @@ export default function FeedPage() {
       content: newPost.trim(),
       username: currentUser.username,
       avatar: currentUser.avatar_url, // Use real avatar
+      author_id: currentUser.id,
       created_at: new Date().toISOString(),
       likes: 0,
     };
@@ -131,6 +146,36 @@ export default function FeedPage() {
       console.error("Error creating post:", error);
       // Revert optimistic update on error
       setPosts(posts.filter(p => p.id !== tempId));
+    }
+  }
+
+  const handleFollowToggle = async (authorId: string) => {
+    if (!currentUser) return
+
+    try {
+      const wasFollowing = followingStatus[authorId]
+      
+      // Optimistic update
+      setFollowingStatus(prev => ({
+        ...prev,
+        [authorId]: !wasFollowing
+      }))
+
+      if (wasFollowing) {
+        await unfollowUser(currentUser.id, authorId)
+      } else {
+        await followUser(currentUser.id, authorId)
+      }
+
+      // Reload posts to reflect following changes
+      loadPosts()
+    } catch (error) {
+      console.error("Error toggling follow:", error)
+      // Revert optimistic update
+      setFollowingStatus(prev => ({
+        ...prev,
+        [authorId]: !prev[authorId]
+      }))
     }
   }
 
@@ -176,8 +221,11 @@ export default function FeedPage() {
             <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
               Chat
             </Link>
-            <Link href="/create-profile" className="font-medium text-gray-600 hover:text-gray-900">
-              Edit Profile
+            <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
+              Discover
+            </Link>
+            <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
+              Profile
             </Link>
           </div>
         </div>
@@ -221,26 +269,43 @@ export default function FeedPage() {
           ) : (
             posts.map((post) => (
               <div key={post.id} className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center mb-3">
-                  {post.avatar ? (
-                    <img src={post.avatar} alt="avatar" className="w-10 h-10 rounded-full mr-3 object-cover" />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
-                      style={{ backgroundColor: "#1c7f8f" }}
-                    >
-                      <span className="text-white font-bold">{post.username.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                  <div>
-                    <div className="font-medium flex items-center">
-                      @{post.username}
-                      <span className="ml-1 text-green-600">✓</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(post.created_at).toLocaleDateString()}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    {post.avatar ? (
+                      <img src={post.avatar} alt="avatar" className="w-10 h-10 rounded-full mr-3 object-cover" />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                        style={{ backgroundColor: "#1c7f8f" }}
+                      >
+                        <span className="text-white font-bold">{post.username.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium flex items-center">
+                        @{post.username}
+                        <span className="ml-1 text-green-600">✓</span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Follow/Unfollow Button - Only show for other users' posts */}
+                  {post.author_id !== currentUser.id && (
+                    <button
+                      onClick={() => handleFollowToggle(post.author_id)}
+                      className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
+                        followingStatus[post.author_id]
+                          ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          : "text-white hover:opacity-90"
+                      }`}
+                      style={!followingStatus[post.author_id] ? { backgroundColor: "#1c7f8f" } : {}}
+                    >
+                      {followingStatus[post.author_id] ? "Following" : "Follow"}
+                    </button>
+                  )}
                 </div>
                 <p className="text-gray-800 mb-4">{post.content}</p>
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
