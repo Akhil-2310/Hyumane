@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { getPosts, createPost, getUserProfile, isFollowing, followUser, unfollowUser } from "@/lib/supabase-actions"
+import { getPosts, createPost, getUserProfile, isFollowing, followUser, unfollowUser, likePost, unlikePost, createReply, getReplies } from "@/lib/supabase-actions"
+import { supabase } from "@/lib/supabase"
 
 interface Post {
   id: string
@@ -13,6 +14,17 @@ interface Post {
   author_id: string
   created_at: string
   likes: number
+  isLiked: boolean
+  replies: number
+}
+
+interface Reply {
+  id: string
+  content: string
+  username: string
+  avatar: string | null
+  author_id: string
+  created_at: string
 }
 
 interface CurrentUser {
@@ -30,6 +42,10 @@ export default function FeedPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({})
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState("")
+  const [showReplies, setShowReplies] = useState<Record<string, boolean>>({})
+  const [replies, setReplies] = useState<Record<string, Reply[]>>({})
   const router = useRouter()
 
   useEffect(() => {
@@ -39,6 +55,66 @@ export default function FeedPage() {
   useEffect(() => {
     if (currentUser) {
       loadPosts()
+    }
+  }, [currentUser])
+
+  // Real-time subscription for likes
+  useEffect(() => {
+    if (!currentUser) return
+
+    const likesSubscription = supabase
+      .channel('likes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'likes'
+        },
+        () => {
+          // Reload posts when likes change
+          loadPosts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      likesSubscription.unsubscribe()
+    }
+  }, [currentUser])
+
+  // Real-time subscription for replies
+  useEffect(() => {
+    if (!currentUser) return
+
+    const repliesSubscription = supabase
+      .channel('replies')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'replies'
+        },
+        (payload) => {
+          // Reload posts to update reply counts
+          loadPosts()
+          
+          // Always reload replies for this post if we have them cached
+          if (replies[payload.new.post_id]) {
+            loadReplies(payload.new.post_id)
+          }
+          
+          // If we're currently showing replies for this post, make sure they're visible
+          if (showReplies[payload.new.post_id]) {
+            loadReplies(payload.new.post_id)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      repliesSubscription.unsubscribe()
     }
   }, [currentUser])
 
@@ -101,6 +177,18 @@ export default function FeedPage() {
     }
   }
 
+  const loadReplies = async (postId: string) => {
+    try {
+      const fetchedReplies = await getReplies(postId)
+      setReplies(prev => ({
+        ...prev,
+        [postId]: fetchedReplies
+      }))
+    } catch (error) {
+      console.error("Error loading replies:", error)
+    }
+  }
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim() || !currentUser) return;
@@ -115,6 +203,8 @@ export default function FeedPage() {
       author_id: currentUser.id,
       created_at: new Date().toISOString(),
       likes: 0,
+      isLiked: false,
+      replies: 0,
     };
     setPosts([optimisticPost, ...posts]);
     setNewPost("");
@@ -126,6 +216,109 @@ export default function FeedPage() {
       console.error("Error creating post:", error);
       // Revert optimistic update on error
       setPosts(posts.filter(p => p.id !== tempId));
+    }
+  }
+
+  const handleLike = async (postId: string, isCurrentlyLiked: boolean) => {
+    if (!currentUser) return
+
+    // Optimistic UI update
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              isLiked: !isCurrentlyLiked,
+              likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1
+            }
+          : post
+      )
+    )
+
+    try {
+      if (isCurrentlyLiked) {
+        await unlikePost(postId, currentUser.id)
+      } else {
+        await likePost(postId, currentUser.id)
+      }
+    } catch (error: any) {
+      // Revert optimistic update on error
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { 
+                ...post, 
+                isLiked: isCurrentlyLiked,
+                likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1
+              }
+            : post
+        )
+      )
+
+      // Handle duplicate key error - means user already liked it
+      if (error.code === '23505') {
+        // Post is actually liked, so unlike it
+        try {
+          await unlikePost(postId, currentUser.id)
+          // Update UI to show unliked state
+          setPosts(prevPosts => 
+            prevPosts.map(post => 
+              post.id === postId 
+                ? { 
+                    ...post, 
+                    isLiked: false,
+                    likes: post.likes - 1
+                  }
+                : post
+            )
+          )
+        } catch (unlikeError) {
+          console.error("Error unliking post:", unlikeError)
+          // Reload posts as fallback
+          loadPosts()
+        }
+      } else {
+        console.error("Error toggling like:", error)
+        // Reload posts as fallback
+        loadPosts()
+      }
+    }
+  }
+
+  const handleReply = async (postId: string) => {
+    if (!replyText.trim() || !currentUser) return
+
+    try {
+      await createReply(postId, replyText, currentUser.id)
+      setReplyText("")
+      setReplyingTo(null)
+      
+      // Immediately show replies for this post if not already showing
+      if (!showReplies[postId]) {
+        setShowReplies(prev => ({
+          ...prev,
+          [postId]: true
+        }))
+      }
+      
+      // Reload replies to show the new one immediately
+      loadReplies(postId)
+    } catch (error) {
+      console.error("Error creating reply:", error)
+    }
+  }
+
+  const toggleReplies = async (postId: string) => {
+    const isCurrentlyShowing = showReplies[postId]
+    
+    setShowReplies(prev => ({
+      ...prev,
+      [postId]: !isCurrentlyShowing
+    }))
+
+    // Load replies when showing them
+    if (!isCurrentlyShowing) {
+      loadReplies(postId)
     }
   }
 
@@ -288,14 +481,99 @@ export default function FeedPage() {
                   )}
                 </div>
                 <p className="text-gray-800 mb-4">{post.content}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <button className="flex items-center space-x-1 hover:text-red-500">
-                    <span>❤️</span>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-6 text-sm text-gray-500 border-t pt-3">
+                  <button 
+                    onClick={() => handleLike(post.id, post.isLiked)}
+                    className={`flex items-center space-x-1 transition-colors ${
+                      post.isLiked ? "text-red-500" : "hover:text-red-500"
+                    }`}
+                  >
+                    <span>{post.isLiked ? "❤️" : "🤍"}</span>
                     <span>{post.likes}</span>
                   </button>
-                  <button className="hover:text-blue-500">💬 Reply</button>
-                  <button className="hover:text-green-500">🔄 Share</button>
+                  
+                  <button 
+                    onClick={() => toggleReplies(post.id)}
+                    className="flex items-center space-x-1 hover:text-blue-500"
+                  >
+                    <span>💬</span>
+                    <span>{post.replies} {post.replies === 1 ? 'Reply' : 'Replies'}</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
+                    className="hover:text-blue-500"
+                  >
+                    Reply
+                  </button>
                 </div>
+
+                {/* Reply Input */}
+                {replyingTo === post.id && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Write a reply..."
+                      className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                    />
+                    <div className="flex justify-end space-x-2 mt-2">
+                      <button
+                        onClick={() => setReplyingTo(null)}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleReply(post.id)}
+                        disabled={!replyText.trim()}
+                        className="px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50"
+                        style={{ backgroundColor: "#1c7f8f", color: "white" }}
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Replies */}
+                {showReplies[post.id] && (
+                  <div className="mt-4 border-t pt-4 space-y-3">
+                    {replies[post.id] && replies[post.id].length > 0 ? (
+                      replies[post.id].map((reply) => (
+                        <div key={reply.id} className="flex space-x-3">
+                          {reply.avatar ? (
+                            <img src={reply.avatar} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: "#1c7f8f" }}
+                            >
+                              <span className="text-white text-xs font-bold">{reply.username.charAt(0).toUpperCase()}</span>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium text-sm">@{reply.username}</span>
+                              <span className="text-green-600 text-xs">✓</span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(reply.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 mt-1">{reply.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        {replies[post.id] ? "No replies yet" : "Loading replies..."}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}

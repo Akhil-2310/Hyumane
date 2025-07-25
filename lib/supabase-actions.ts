@@ -90,7 +90,7 @@ export async function getPosts(currentUserId?: string) {
     return []
   }
 
-  // Then get profile data for each post
+  // Then get profile data and like counts for each post
   const transformedPosts = []
   
   for (const post of posts || []) {
@@ -101,6 +101,30 @@ export async function getPosts(currentUserId?: string) {
       .eq("verified_user_id", post.author_id)
       .single()
 
+    // Get like count for this post
+    const { count: likeCount } = await supabase
+      .from("likes")
+      .select("*", { count: 'exact' })
+      .eq("post_id", post.id)
+
+    // Check if current user liked this post
+    let isLiked = false
+    if (currentUserId) {
+      const { data: userLike } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("post_id", post.id)
+        .eq("user_id", currentUserId)
+        .maybeSingle()
+      isLiked = !!userLike
+    }
+
+    // Get reply count for this post
+    const { count: replyCount } = await supabase
+      .from("replies")
+      .select("*", { count: 'exact' })
+      .eq("post_id", post.id)
+
     transformedPosts.push({
       id: post.id,
       content: post.content,
@@ -108,7 +132,9 @@ export async function getPosts(currentUserId?: string) {
       avatar: profile?.avatar_url || null,
       author_id: post.author_id,
       created_at: post.created_at,
-      likes: post.likes || 0,
+      likes: likeCount || 0,
+      isLiked: isLiked,
+      replies: replyCount || 0,
     })
   }
   
@@ -134,6 +160,86 @@ export async function createPost(content: string, userId: string) {
     throw error
   }
   return data
+}
+
+export async function likePost(postId: string, userId: string) {
+  const { data, error } = await supabase.from("likes").insert([
+    {
+      post_id: postId,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+    },
+  ])
+
+  if (error) throw error
+  return data
+}
+
+export async function unlikePost(postId: string, userId: string) {
+  const { data, error } = await supabase
+    .from("likes")
+    .delete()
+    .eq("post_id", postId)
+    .eq("user_id", userId)
+
+  if (error) throw error
+  return data
+}
+
+export async function createReply(postId: string, content: string, userId: string) {
+  if (!content.trim() || !userId || !postId) {
+    throw new Error('Post ID, content, and user ID are required')
+  }
+
+  const { data, error } = await supabase.from("replies").insert([
+    {
+      post_id: postId,
+      content: content.trim(),
+      author_id: userId,
+      created_at: new Date().toISOString(),
+    },
+  ])
+
+  if (error) {
+    console.error("Error creating reply:", error)
+    throw error
+  }
+  return data
+}
+
+export async function getReplies(postId: string) {
+  const { data: replies, error } = await supabase
+    .from("replies")
+    .select("*")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching replies:", error)
+    return []
+  }
+
+  // Get profile data for each reply
+  const transformedReplies = []
+  
+  for (const reply of replies || []) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("verified_user_id", reply.author_id)
+      .single()
+
+    transformedReplies.push({
+      id: reply.id,
+      content: reply.content,
+      username: profile?.username || "anonymous",
+      avatar: profile?.avatar_url || null,
+      author_id: reply.author_id,
+      created_at: reply.created_at,
+    })
+  }
+  
+  return transformedReplies;
 }
 
 export async function followUser(followerId: string, followingId: string) {
