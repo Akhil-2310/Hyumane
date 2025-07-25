@@ -4,7 +4,8 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { getChats, getMessages, sendMessage } from "@/lib/supabase-actions"
+import { useRouter, useSearchParams } from "next/navigation"
+import { getChats, getMessages, sendMessage, getUserProfile, createOrGetChat } from "@/lib/supabase-actions"
 
 interface Chat {
   id: string
@@ -21,25 +22,100 @@ interface Message {
   isOwn: boolean
 }
 
+interface CurrentUser {
+  id: string
+  username: string
+  bio: string
+  interests: string
+  isVerified: boolean
+  avatar_url: string | null
+}
+
 export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>([])
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    loadChats()
+    checkUserSession()
   }, [])
 
   useEffect(() => {
-    if (selectedChat) {
+    if (currentUser) {
+      loadChats()
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    // Check if there's a chatId in the URL parameters
+    const chatId = searchParams.get('chatId')
+    if (chatId && !selectedChat) {
+      setSelectedChat(chatId)
+    }
+  }, [searchParams, selectedChat])
+
+  useEffect(() => {
+    if (selectedChat && currentUser) {
       loadMessages(selectedChat)
     }
-  }, [selectedChat])
+  }, [selectedChat, currentUser])
+
+  const checkUserSession = async () => {
+    console.log("Checking user session...");
+    
+    const verificationData = localStorage.getItem('verifiedUserData')
+    
+    if (!verificationData) {
+      console.log("No verification data, redirecting to verify");
+      router.push('/verify')
+      return
+    }
+
+    try {
+      const parsedData = JSON.parse(verificationData)
+      
+      if (!parsedData.userId || !parsedData.isVerified) {
+        console.log("Invalid verification data, redirecting to verify");
+        router.push('/verify')
+        return
+      }
+
+      const profileData = await getUserProfile(parsedData.userId)
+      
+      if (!profileData) {
+        console.log("Profile not found, redirecting to create profile");
+        router.push('/create-profile')
+        return
+      }
+
+      setCurrentUser({
+        id: parsedData.userId,
+        username: profileData.username,
+        bio: profileData.bio,
+        interests: profileData.interests,
+        isVerified: profileData.is_verified,
+        avatar_url: profileData.avatar_url
+      });
+      
+      console.log("User session set successfully");
+    } catch (error) {
+      console.error('Error loading user session:', error)
+      router.push('/verify')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const loadChats = async () => {
+    if (!currentUser) return
+    
     try {
-      const fetchedChats = await getChats()
+      const fetchedChats = await getChats(currentUser.id)
       setChats(fetchedChats)
     } catch (error) {
       console.error("Error loading chats:", error)
@@ -49,7 +125,12 @@ export default function ChatPage() {
   const loadMessages = async (chatId: string) => {
     try {
       const fetchedMessages = await getMessages(chatId)
-      setMessages(fetchedMessages)
+      // Mark messages as own based on current user ID
+      const messagesWithOwnership = fetchedMessages.map(msg => ({
+        ...msg,
+        isOwn: msg.sender_id === currentUser?.id
+      }))
+      setMessages(messagesWithOwnership)
     } catch (error) {
       console.error("Error loading messages:", error)
     }
@@ -57,15 +138,27 @@ export default function ChatPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !selectedChat) return
+    if (!newMessage.trim() || !selectedChat || !currentUser) return
 
     try {
-      await sendMessage(selectedChat, newMessage)
+      await sendMessage(selectedChat, newMessage, currentUser.id)
       setNewMessage("")
       loadMessages(selectedChat)
+      loadChats() // Refresh chat list to update last message
     } catch (error) {
       console.error("Error sending message:", error)
     }
+  }
+
+  if (isLoading || !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -76,16 +169,34 @@ export default function ChatPage() {
           <Link href="/" className="text-2xl font-bold" style={{ color: "#1c7f8f" }}>
             Hyumane
           </Link>
-          <div className="flex space-x-4">
-            <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
-              Feed
-            </Link>
-            <Link href="/chat" className="font-medium" style={{ color: "#1c7f8f" }}>
-              Chat
-            </Link>
-            <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
-              Profile
-            </Link>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              {currentUser.avatar_url ? (
+                <img src={currentUser.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "#1c7f8f" }}
+                >
+                  <span className="text-white text-sm font-bold">{currentUser.username.charAt(0).toUpperCase()}</span>
+                </div>
+              )}
+              <span className="text-sm text-gray-600">
+                @{currentUser.username} {currentUser.isVerified && <span className="text-green-600">✓</span>}
+              </span>
+            </div>
+                         <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
+               Feed
+             </Link>
+             <Link href="/chat" className="font-medium" style={{ color: "#1c7f8f" }}>
+               Chat
+             </Link>
+             <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
+               Discover
+             </Link>
+             <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
+               Profile
+             </Link>
           </div>
         </div>
       </nav>
@@ -99,28 +210,35 @@ export default function ChatPage() {
                 <h2 className="text-lg font-semibold">Messages</h2>
               </div>
               <div className="overflow-y-auto h-full">
-                {chats.map((chat) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setSelectedChat(chat.id)}
-                    className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                      selectedChat === chat.id ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
-                        style={{ backgroundColor: "#1c7f8f" }}
-                      >
-                        <span className="text-white font-bold">{chat.name.charAt(0).toUpperCase()}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{chat.name}</div>
-                        <div className="text-sm text-gray-500 truncate">{chat.lastMessage}</div>
+                {chats.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <p className="mb-2">No conversations yet</p>
+                    <p className="text-sm">Start chatting with people you follow!</p>
+                  </div>
+                ) : (
+                  chats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      onClick={() => setSelectedChat(chat.id)}
+                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                        selectedChat === chat.id ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                          style={{ backgroundColor: "#1c7f8f" }}
+                        >
+                          <span className="text-white font-bold">{chat.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">{chat.name}</div>
+                          <div className="text-sm text-gray-500 truncate">{chat.lastMessage}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -133,21 +251,27 @@ export default function ChatPage() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.map((message) => (
-                      <div key={message.id} className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}>
-                        <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.isOwn ? "text-white" : "bg-gray-100 text-gray-800"
-                          }`}
-                          style={message.isOwn ? { backgroundColor: "#1c7f8f" } : {}}
-                        >
-                          <p>{message.content}</p>
-                          <p className={`text-xs mt-1 ${message.isOwn ? "text-blue-100" : "text-gray-500"}`}>
-                            {message.timestamp}
-                          </p>
-                        </div>
+                    {messages.length === 0 ? (
+                      <div className="text-center text-gray-500 mt-8">
+                        <p>No messages yet. Start the conversation!</p>
                       </div>
-                    ))}
+                    ) : (
+                      messages.map((message) => (
+                        <div key={message.id} className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}>
+                          <div
+                            className={`max-w-xs px-4 py-2 rounded-lg ${
+                              message.isOwn ? "text-white" : "bg-gray-100 text-gray-800"
+                            }`}
+                            style={message.isOwn ? { backgroundColor: "#1c7f8f" } : {}}
+                          >
+                            <p>{message.content}</p>
+                            <p className={`text-xs mt-1 ${message.isOwn ? "text-blue-100" : "text-gray-500"}`}>
+                              {message.timestamp}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
@@ -171,7 +295,10 @@ export default function ChatPage() {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-500">
-                  Select a chat to start messaging
+                  <div className="text-center">
+                    <p className="mb-2">Select a chat to start messaging</p>
+                    <p className="text-sm">Or follow some users to start new conversations</p>
+                  </div>
                 </div>
               )}
             </div>

@@ -41,14 +41,54 @@ export async function createProfile(profileData: {
   return data;
 }
 
-export async function getPosts() {
+export async function updateProfile(userId: string, profileData: {
+  username?: string;
+  bio?: string;
+  interests?: string;
+  avatarUrl?: string;
+}) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      username: profileData.username,
+      bio: profileData.bio,
+      interests: profileData.interests,
+      avatar_url: profileData.avatarUrl,
+    })
+    .eq('verified_user_id', userId);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getPosts(currentUserId?: string) {
   console.log("Fetching posts with profile data...");
   
-  // First, get all posts
-  const { data: posts, error: postsError } = await supabase
+  let postsQuery = supabase
     .from("posts")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  // If user is provided, check if they follow anyone
+  if (currentUserId) {
+    const { data: followedUsers, error: followError } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", currentUserId);
+
+    if (!followError && followedUsers && followedUsers.length > 0) {
+      // User follows someone, so show only posts from followed users and themselves
+      const followedUserIds = followedUsers.map(f => f.following_id);
+      followedUserIds.push(currentUserId); // Include user's own posts
+      
+      postsQuery = postsQuery.in('author_id', followedUserIds);
+      console.log("Filtering posts for followed users:", followedUserIds);
+    } else {
+      console.log("User doesn't follow anyone, showing all posts");
+    }
+  }
+
+  const { data: posts, error: postsError } = await postsQuery;
 
   if (postsError) {
     console.error("Error fetching posts:", postsError)
@@ -77,6 +117,7 @@ export async function getPosts() {
       content: post.content,
       username: profile?.username || "anonymous",
       avatar: profile?.avatar_url || null,
+      author_id: post.author_id,
       created_at: post.created_at,
       likes: post.likes || 0,
     })
@@ -107,17 +148,62 @@ export async function createPost(content: string, userId: string) {
   return data
 }
 
-export async function followUser(userId: string) {
+export async function followUser(followerId: string, followingId: string) {
   const { data, error } = await supabase.from("follows").insert([
     {
-      follower_id: "current-user-id",
-      following_id: userId,
+      follower_id: followerId,
+      following_id: followingId,
       created_at: new Date().toISOString(),
     },
   ])
 
   if (error) throw error
   return data
+}
+
+export async function unfollowUser(followerId: string, followingId: string) {
+  const { data, error } = await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", followerId)
+    .eq("following_id", followingId)
+
+  if (error) throw error
+  return data
+}
+
+export async function isFollowing(followerId: string, followingId: string) {
+  const { data, error } = await supabase
+    .from("follows")
+    .select("id")
+    .eq("follower_id", followerId)
+    .eq("following_id", followingId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Error checking follow status:", error)
+    return false
+  }
+  
+  return !!data
+}
+
+export async function getFollowStats(userId: string) {
+  const [followersResult, followingResult] = await Promise.all([
+    supabase
+      .from("follows")
+      .select("id", { count: 'exact' })
+      .eq("following_id", userId),
+    supabase
+      .from("follows")
+      .select("id", { count: 'exact' })
+      .eq("follower_id", userId)
+  ]);
+
+  return {
+    followers: followersResult.count || 0,
+    following: followingResult.count || 0
+  };
 }
 
 export async function getChats(userId: string) {
@@ -127,10 +213,10 @@ export async function getChats(userId: string) {
       id,
       last_message,
       updated_at,
-      profiles (
-        username
-      )
+      participant1_id,
+      participant2_id
     `)
+    .or(`participant1_id.eq.${userId},participant2_id.eq.${userId}`)
     .order("updated_at", { ascending: false })
 
   if (error) {
@@ -138,12 +224,29 @@ export async function getChats(userId: string) {
     return []
   }
 
-  return data?.map(chat => ({
-    id: chat.id,
-    name: chat.profiles?.[0]?.username || "Anonymous",
-    lastMessage: chat.last_message || "No messages yet",
-    timestamp: new Date(chat.updated_at).toLocaleDateString(),
-  })) || []
+  // For each chat, get the other participant's profile info
+  const chatsWithUserInfo = []
+  for (const chat of data || []) {
+    const otherParticipantId = chat.participant1_id === userId ? chat.participant2_id : chat.participant1_id
+    
+    // Get the other participant's profile
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("verified_user_id", otherParticipantId)
+      .single()
+
+    if (!profileError && profile) {
+      chatsWithUserInfo.push({
+        id: chat.id,
+        name: profile.username,
+        lastMessage: chat.last_message || "No messages yet",
+        timestamp: new Date(chat.updated_at).toLocaleDateString(),
+      })
+    }
+  }
+
+  return chatsWithUserInfo
 }
 
 export async function getMessages(chatId: string) {
@@ -153,10 +256,7 @@ export async function getMessages(chatId: string) {
       id,
       content,
       created_at,
-      sender_id,
-      profiles (
-        username
-      )
+      sender_id
     `)
     .eq("chat_id", chatId)
     .order("created_at", { ascending: true })
@@ -166,13 +266,26 @@ export async function getMessages(chatId: string) {
     return []
   }
 
-  return data?.map(message => ({
-    id: message.id,
-    content: message.content,
-    sender: message.profiles?.[0]?.username || "Anonymous",
-    timestamp: new Date(message.created_at).toLocaleTimeString(),
-    isOwn: false, // This will be determined by comparing sender_id with current user
-  })) || []
+  // For each message, get the sender's username
+  const messagesWithSenderInfo = []
+  for (const message of data || []) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("verified_user_id", message.sender_id)
+      .single()
+
+    messagesWithSenderInfo.push({
+      id: message.id,
+      content: message.content,
+      sender: profile?.username || "Anonymous",
+      sender_id: message.sender_id,
+      timestamp: new Date(message.created_at).toLocaleTimeString(),
+      isOwn: false, // This will be set by the calling component
+    })
+  }
+
+  return messagesWithSenderInfo
 }
 
 export async function sendMessage(chatId: string, content: string, senderId: string) {
@@ -196,6 +309,21 @@ export async function sendMessage(chatId: string, content: string, senderId: str
   return data
 }
 
+export async function createOrGetChat(userId1: string, userId2: string) {
+  // Use the database function to get or create a chat
+  const { data, error } = await supabase.rpc('get_or_create_chat', {
+    user1_id: userId1,
+    user2_id: userId2
+  })
+
+  if (error) {
+    console.error("Error creating/getting chat:", error)
+    throw error
+  }
+
+  return data // Returns the chat ID
+}
+
 export async function getUserProfile(verifiedUserId: string) {
   const { data, error } = await supabase
     .from("profiles")
@@ -209,4 +337,19 @@ export async function getUserProfile(verifiedUserId: string) {
   }
 
   return data
+}
+
+export async function getAllUsers(currentUserId?: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("verified_user_id, username, bio, avatar_url, is_verified")
+    .neq("verified_user_id", currentUserId || "")
+    .order("username", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching users:", error)
+    return []
+  }
+
+  return data || []
 }
