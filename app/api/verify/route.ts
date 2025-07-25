@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     const selfBackendVerifier = new SelfBackendVerifier(
       "hyumane",
-      "https://c5c739934328.ngrok-free.app/api/verify",
+      "https://hyumane.vercel.app/verify",
       true, // dev mode
       AllIds,
       configStore,
