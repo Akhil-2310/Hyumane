@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -31,7 +29,6 @@ export default function FeedPage() {
   const [newPost, setNewPost] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [userLoading, setUserLoading] = useState(true)
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({})
   const router = useRouter()
 
@@ -46,13 +43,9 @@ export default function FeedPage() {
   }, [currentUser])
 
   const checkUserSession = async () => {
-    console.log("Checking user session...");
-    
-    // Get minimal verification data from localStorage
     const verificationData = localStorage.getItem('verifiedUserData')
     
     if (!verificationData) {
-      console.log("No verification data, redirecting to verify");
       router.push('/verify')
       return
     }
@@ -61,44 +54,33 @@ export default function FeedPage() {
       const parsedData = JSON.parse(verificationData)
       
       if (!parsedData.userId || !parsedData.isVerified) {
-        console.log("Invalid verification data, redirecting to verify");
         router.push('/verify')
         return
       }
 
-      // Fetch full profile data from Supabase
       const profileData = await getUserProfile(parsedData.userId)
       
       if (!profileData) {
-        console.log("Profile not found, redirecting to create profile");
         router.push('/create-profile')
         return
       }
 
-      console.log("Profile data from database:", profileData); // Debug log
-
       setCurrentUser({
-        id: parsedData.userId, // verification UUID (used for posts)
+        id: parsedData.userId,
         username: profileData.username,
         bio: profileData.bio,
         interests: profileData.interests,
         isVerified: profileData.is_verified,
-        avatar_url: profileData.avatar_url // Make sure this matches the database column
+        avatar_url: profileData.avatar_url
       });
-      
-      console.log("Current user set with avatar_url:", profileData.avatar_url); // Debug log
-      console.log("User session set successfully");
     } catch (error) {
       console.error('Error loading user session:', error)
       router.push('/verify')
-    } finally {
-      setUserLoading(false)
     }
   }
 
   const loadPosts = async () => {
     try {
-      // Pass current user ID to get filtered posts
       const fetchedPosts = await getPosts(currentUser?.id)
       setPosts(fetchedPosts)
       
@@ -129,7 +111,7 @@ export default function FeedPage() {
       id: tempId,
       content: newPost.trim(),
       username: currentUser.username,
-      avatar: currentUser.avatar_url, // Use real avatar
+      avatar: currentUser.avatar_url,
       author_id: currentUser.id,
       created_at: new Date().toISOString(),
       likes: 0,
@@ -138,9 +120,7 @@ export default function FeedPage() {
     setNewPost("");
 
     try {
-      // Use the verification userId directly (not profileId)
       await createPost(optimisticPost.content, currentUser.id);
-      // Refetch to get accurate data (e.g., real id, avatar)
       loadPosts();
     } catch (error) {
       console.error("Error creating post:", error);

@@ -55,12 +55,9 @@ export default function DiscoverPage() {
   }, [searchQuery, users])
 
   const checkUserSession = async () => {
-    console.log("Checking user session...");
-    
     const verificationData = localStorage.getItem('verifiedUserData')
     
     if (!verificationData) {
-      console.log("No verification data, redirecting to verify");
       router.push('/verify')
       return
     }
@@ -69,7 +66,6 @@ export default function DiscoverPage() {
       const parsedData = JSON.parse(verificationData)
       
       if (!parsedData.userId || !parsedData.isVerified) {
-        console.log("Invalid verification data, redirecting to verify");
         router.push('/verify')
         return
       }
@@ -77,7 +73,6 @@ export default function DiscoverPage() {
       const profileData = await getUserProfile(parsedData.userId)
       
       if (!profileData) {
-        console.log("Profile not found, redirecting to create profile");
         router.push('/create-profile')
         return
       }
@@ -90,8 +85,6 @@ export default function DiscoverPage() {
         isVerified: profileData.is_verified,
         avatar_url: profileData.avatar_url
       });
-      
-      console.log("User session set successfully");
     } catch (error) {
       console.error('Error loading user session:', error)
       router.push('/verify')

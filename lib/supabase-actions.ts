@@ -62,8 +62,6 @@ export async function updateProfile(userId: string, profileData: {
 }
 
 export async function getPosts(currentUserId?: string) {
-  console.log("Fetching posts with profile data...");
-  
   let postsQuery = supabase
     .from("posts")
     .select("*")
@@ -82,9 +80,6 @@ export async function getPosts(currentUserId?: string) {
       followedUserIds.push(currentUserId); // Include user's own posts
       
       postsQuery = postsQuery.in('author_id', followedUserIds);
-      console.log("Filtering posts for followed users:", followedUserIds);
-    } else {
-      console.log("User doesn't follow anyone, showing all posts");
     }
   }
 
@@ -95,22 +90,16 @@ export async function getPosts(currentUserId?: string) {
     return []
   }
 
-  console.log("Raw posts:", posts);
-
   // Then get profile data for each post
   const transformedPosts = []
   
   for (const post of posts || []) {
-    console.log("Processing post with author_id:", post.author_id);
-    
     // Get profile for this post's author
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("username, avatar_url")
       .eq("verified_user_id", post.author_id)
       .single()
-
-    console.log("Profile for author_id", post.author_id, ":", profile, "Error:", profileError);
 
     transformedPosts.push({
       id: post.id,
@@ -123,7 +112,6 @@ export async function getPosts(currentUserId?: string) {
     })
   }
   
-  console.log("Final transformed posts:", transformedPosts);
   return transformedPosts;
 }
 
@@ -310,7 +298,6 @@ export async function sendMessage(chatId: string, content: string, senderId: str
 }
 
 export async function createOrGetChat(userId1: string, userId2: string) {
-  // Use the database function to get or create a chat
   const { data, error } = await supabase.rpc('get_or_create_chat', {
     user1_id: userId1,
     user2_id: userId2

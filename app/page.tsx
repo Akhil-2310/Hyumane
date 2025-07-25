@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation"
 import { getUserProfile } from "@/lib/supabase-actions"
-import Link from "next/link"
 
 export default function LandingPage() {
   const router = useRouter()

@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createProfile } from "@/lib/supabase-actions"
@@ -54,10 +52,6 @@ export default function CreateProfilePage() {
         verificationDate: verifiedUserData?.verificationDate || '',
         avatarUrl,
       });
-      
-      // Keep verification data for session
-      // Don't clear it here - the feed page needs it too
-      console.log("done");
       
       router.push("/feed")
     } catch (error) {

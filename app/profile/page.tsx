@@ -39,12 +39,9 @@ export default function ProfilePage() {
   }, [])
 
   const checkUserSession = async () => {
-    console.log("Checking user session...");
-    
     const verificationData = localStorage.getItem('verifiedUserData')
     
     if (!verificationData) {
-      console.log("No verification data, redirecting to verify");
       router.push('/verify')
       return
     }
@@ -53,7 +50,6 @@ export default function ProfilePage() {
       const parsedData = JSON.parse(verificationData)
       
       if (!parsedData.userId || !parsedData.isVerified) {
-        console.log("Invalid verification data, redirecting to verify");
         router.push('/verify')
         return
       }
@@ -61,7 +57,6 @@ export default function ProfilePage() {
       const profileData = await getUserProfile(parsedData.userId)
       
       if (!profileData) {
-        console.log("Profile not found, redirecting to create profile");
         router.push('/create-profile')
         return
       }
@@ -84,8 +79,6 @@ export default function ProfilePage() {
         bio: profileData.bio,
         interests: profileData.interests,
       })
-      
-      console.log("Profile loaded successfully");
     } catch (error) {
       console.error('Error loading profile:', error)
       router.push('/verify')
@@ -161,18 +154,18 @@ export default function ProfilePage() {
             Hyumane
           </Link>
           <div className="flex items-center space-x-4">
-                         <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
-               Feed
-             </Link>
-             <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
-               Chat
-             </Link>
-             <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
-               Discover
-             </Link>
-             <Link href="/profile" className="font-medium" style={{ color: "#1c7f8f" }}>
-               Profile
-             </Link>
+            <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
+              Feed
+            </Link>
+            <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
+              Chat
+            </Link>
+            <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
+              Discover
+            </Link>
+            <Link href="/profile" className="font-medium" style={{ color: "#1c7f8f" }}>
+              Profile
+            </Link>
           </div>
         </div>
       </nav>

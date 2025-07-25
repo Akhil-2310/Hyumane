@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -19,6 +17,7 @@ interface Message {
   content: string
   sender: string
   timestamp: string
+  sender_id: string
   isOwn: boolean
 }
 
@@ -66,12 +65,9 @@ export default function ChatPage() {
   }, [selectedChat, currentUser])
 
   const checkUserSession = async () => {
-    console.log("Checking user session...");
-    
     const verificationData = localStorage.getItem('verifiedUserData')
     
     if (!verificationData) {
-      console.log("No verification data, redirecting to verify");
       router.push('/verify')
       return
     }
@@ -80,7 +76,6 @@ export default function ChatPage() {
       const parsedData = JSON.parse(verificationData)
       
       if (!parsedData.userId || !parsedData.isVerified) {
-        console.log("Invalid verification data, redirecting to verify");
         router.push('/verify')
         return
       }
@@ -88,7 +83,6 @@ export default function ChatPage() {
       const profileData = await getUserProfile(parsedData.userId)
       
       if (!profileData) {
-        console.log("Profile not found, redirecting to create profile");
         router.push('/create-profile')
         return
       }
@@ -101,8 +95,6 @@ export default function ChatPage() {
         isVerified: profileData.is_verified,
         avatar_url: profileData.avatar_url
       });
-      
-      console.log("User session set successfully");
     } catch (error) {
       console.error('Error loading user session:', error)
       router.push('/verify')
@@ -185,18 +177,18 @@ export default function ChatPage() {
                 @{currentUser.username} {currentUser.isVerified && <span className="text-green-600">✓</span>}
               </span>
             </div>
-                         <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
-               Feed
-             </Link>
-             <Link href="/chat" className="font-medium" style={{ color: "#1c7f8f" }}>
-               Chat
-             </Link>
-             <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
-               Discover
-             </Link>
-             <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
-               Profile
-             </Link>
+            <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
+              Feed
+            </Link>
+            <Link href="/chat" className="font-medium" style={{ color: "#1c7f8f" }}>
+              Chat
+            </Link>
+            <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
+              Discover
+            </Link>
+            <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
+              Profile
+            </Link>
           </div>
         </div>
       </nav>

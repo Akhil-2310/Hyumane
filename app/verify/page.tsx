@@ -46,8 +46,6 @@ export default function VerifyPage() {
   }, []);
 
   const handleVerificationSuccess = () => {
-    console.log("Verification successful!");
-    
     const verificationDate = new Date().toISOString();
     
     // Store basic verified user data for session management
