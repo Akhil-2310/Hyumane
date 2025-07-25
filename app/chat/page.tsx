@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getChats, getMessages, sendMessage, getUserProfile, createOrGetChat } from "@/lib/supabase-actions"
+import { supabase } from "@/lib/supabase"
 
 interface Chat {
   id: string
@@ -63,6 +64,76 @@ function ChatPageContent() {
       loadMessages(selectedChat)
     }
   }, [selectedChat, currentUser])
+
+  // Real-time subscription for messages in the current chat
+  useEffect(() => {
+    if (!selectedChat || !currentUser) return
+
+    const messageSubscription = supabase
+      .channel(`messages:${selectedChat}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `chat_id=eq.${selectedChat}`
+        },
+        async (payload) => {
+          console.log('New message received:', payload.new)
+          
+          // Get sender's profile info
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("verified_user_id", payload.new.sender_id)
+            .single()
+
+          const newMessage: Message = {
+            id: payload.new.id,
+            content: payload.new.content,
+            sender: profile?.username || "Anonymous",
+            sender_id: payload.new.sender_id,
+            timestamp: new Date(payload.new.created_at).toLocaleTimeString(),
+            isOwn: payload.new.sender_id === currentUser.id
+          }
+
+          // Add new message to the messages array
+          setMessages(prevMessages => [...prevMessages, newMessage])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      messageSubscription.unsubscribe()
+    }
+  }, [selectedChat, currentUser])
+
+  // Real-time subscription for chat updates (last message changes)
+  useEffect(() => {
+    if (!currentUser) return
+
+    const chatSubscription = supabase
+      .channel('chats:updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chats'
+        },
+        (payload) => {
+          console.log('Chat updated:', payload.new)
+          // Refresh chat list when any chat gets updated
+          loadChats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      chatSubscription.unsubscribe()
+    }
+  }, [currentUser])
 
   const checkUserSession = async () => {
     const verificationData = localStorage.getItem('verifiedUserData')
@@ -132,13 +203,20 @@ function ChatPageContent() {
     e.preventDefault()
     if (!newMessage.trim() || !selectedChat || !currentUser) return
 
+    const messageText = newMessage.trim()
+    setNewMessage("") // Clear input immediately for better UX
+
     try {
-      await sendMessage(selectedChat, newMessage, currentUser.id)
-      setNewMessage("")
-      loadMessages(selectedChat)
-      loadChats() // Refresh chat list to update last message
+      await sendMessage(selectedChat, messageText, currentUser.id)
+      // Note: We don't need to manually refresh messages anymore!
+      // The real-time subscription will automatically add the new message
+      
+      // We also don't need to refresh chats manually
+      // The chat update subscription will handle that too
     } catch (error) {
       console.error("Error sending message:", error)
+      // Restore message text if sending failed
+      setNewMessage(messageText)
     }
   }
 
@@ -200,6 +278,10 @@ function ChatPageContent() {
             <div className="w-1/3 border-r border-gray-200">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold">Messages</h2>
+                <div className="text-xs text-gray-500 mt-1">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  Live
+                </div>
               </div>
               <div className="overflow-y-auto h-full">
                 {chats.length === 0 ? (
@@ -240,6 +322,10 @@ function ChatPageContent() {
                 <>
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="font-semibold">{chats.find((c) => c.id === selectedChat)?.name}</h3>
+                    <div className="text-xs text-gray-500">
+                      <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                      Messages update automatically
+                    </div>
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -277,7 +363,8 @@ function ChatPageContent() {
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 rounded-lg font-medium transition-colors"
+                        disabled={!newMessage.trim()}
+                        className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                         style={{ backgroundColor: "#1c7f8f", color: "white" }}
                       >
                         Send
@@ -289,7 +376,7 @@ function ChatPageContent() {
                 <div className="flex-1 flex items-center justify-center text-gray-500">
                   <div className="text-center">
                     <p className="mb-2">Select a chat to start messaging</p>
-                    <p className="text-sm">Or follow some users to start new conversations</p>
+                    <p className="text-sm">Messages appear instantly with real-time updates</p>
                   </div>
                 </div>
               )}
