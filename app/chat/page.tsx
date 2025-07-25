@@ -278,10 +278,6 @@ function ChatPageContent() {
             <div className="w-1/3 border-r border-gray-200">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold">Messages</h2>
-                <div className="text-xs text-gray-500 mt-1">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  Live
-                </div>
               </div>
               <div className="overflow-y-auto h-full">
                 {chats.length === 0 ? (
@@ -322,10 +318,6 @@ function ChatPageContent() {
                 <>
                   <div className="p-4 border-b border-gray-200">
                     <h3 className="font-semibold">{chats.find((c) => c.id === selectedChat)?.name}</h3>
-                    <div className="text-xs text-gray-500">
-                      <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                      Messages update automatically
-                    </div>
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
