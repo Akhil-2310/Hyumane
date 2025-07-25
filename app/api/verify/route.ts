@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     const selfBackendVerifier = new SelfBackendVerifier(
       "hyumane",
-      "https://d81b6b0e9990.ngrok-free.app/api/verify",
+      "https://c5c739934328.ngrok-free.app/api/verify",
       true, // dev mode
       AllIds,
       configStore,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         error_code: "VERIFICATION_FAILED",
         details: result.isValidDetails,
       }, { 
-        status: 200,
+        status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         error_code: "VERIFICATION_FAILED",
         details: result,
       }, { 
-        status: 200,
+        status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
       reason: "Internal Error",
       error_code: "INTERNAL_ERROR"
     }, { 
-      status: 200,
+      status: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
