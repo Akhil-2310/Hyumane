@@ -1,6 +1,49 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { getUserProfile } from "@/lib/supabase-actions"
 import Link from "next/link"
 
 export default function LandingPage() {
+  const router = useRouter()
+
+  const handleLaunchApp = async () => {
+    // Check if user already has verification data
+    const verificationData = localStorage.getItem('verifiedUserData')
+    
+    if (!verificationData) {
+      // No verification data, go to verify page
+      router.push('/verify')
+      return
+    }
+
+    try {
+      const parsedData = JSON.parse(verificationData)
+      
+      if (!parsedData.userId || !parsedData.isVerified) {
+        // Invalid verification data, go to verify page
+        router.push('/verify')
+        return
+      }
+
+      // Check if user has a profile
+      const profileData = await getUserProfile(parsedData.userId)
+      
+      if (!profileData) {
+        // Has verification but no profile, go to create profile
+        router.push('/create-profile')
+        return
+      }
+
+      // Has both verification and profile, go to feed
+      router.push('/feed')
+    } catch (error) {
+      console.error('Error checking user status:', error)
+      // On error, default to verify page
+      router.push('/verify')
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fff6c9", color: "#000000" }}>
       {/* Navbar */}
@@ -10,13 +53,13 @@ export default function LandingPage() {
           <span className="text-2xl font-bold">Hyumane</span>
         </div>
 
-        <Link
-          href="/verify"
-          className="px-6 py-2 rounded-lg font-medium transition-colors"
+        <button
+          onClick={handleLaunchApp}
+          className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
           style={{ backgroundColor: "#1c7f8f", color: "white" }}
         >
           Launch App
-        </Link>
+        </button>
       </nav>
 
 
@@ -28,13 +71,13 @@ export default function LandingPage() {
         <p className="text-xl md:text-2xl mb-8 text-gray-700">
           By humans, for humans. Connect authentically in a verified community where every person is real.
         </p>
-        <Link
-          href="/verify"
-          className="inline-block px-8 py-4 text-lg font-medium rounded-lg transition-colors"
+        <button
+          onClick={handleLaunchApp}
+          className="inline-block px-8 py-4 text-lg font-medium rounded-lg transition-colors hover:opacity-90"
           style={{ backgroundColor: "#1c7f8f", color: "white" }}
         >
           Join the Community
-        </Link>
+        </button>
       </section>
 
       {/* Philosophy Section */}
