@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🤝 Hyumane
 
-## Getting Started
+**Hyumane** is a social media platform built for **real human connections** — by humans, for humans. Every profile is verified through **zero-knowledge (zk) technology** to ensure that only **real humans** can sign in and participate.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 📌 Description
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Hyumane is more than just another social network. It is a **digital space for authentic interaction**, focused on **human-first verification**. With the growing presence of bots and AI-generated content, Hyumane aims to reclaim the internet for **actual people**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎯 Mission
 
-## Learn More
+We are on a mission to foster **genuine human interaction and connection** amidst the overwhelming rise of AI-generated content and bots.
 
-To learn more about Next.js, take a look at the following resources:
+Hyumane isn't just about preventing bot accounts — it's about protecting the **human element** in digital communication and ensuring that both **accounts and content** remain authentic.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚨 Problem
 
-## Deploy on Vercel
+In today’s online world, **AI bots are everywhere** — even on social media platforms that are meant to be *social*. 
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This results in:
+- Fake engagements
+- Spammy content
+- A lack of trust in digital identities
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ultimately, we're losing the **real connections** that these platforms were built to create.
+
+---
+
+## ✅ Solution
+
+Hyumane is solving this by:
+- Verifying **every profile** using **zk-proof-based human verification**
+- Ensuring **only real humans** can create and maintain accounts
+- In **Version 2**, integrating an **AI content detector** to block non-human generated content
+
+With zk tech, we verify users **without compromising their privacy**, offering a seamless yet trustworthy experience.
+
+---
+
+## 🔮 Future Plans (V2)
+
+- 🧠 **AI Content Detection**: Identify and reduce AI-generated "slop" on the platform
+- 🔐 **Expanded ZK Use-Cases**: Extend zk-verification to content authorship, voting, and more
+
+---
+
+## 🧬 Built With
+
+- Zero-Knowledge Proofs (ZKPs)
+- Human Verification via Self Protocol / Biometric Gateways (planned)
+- AI Content Classifiers (Coming in V2)
+- React / Next.js (Frontend)
+- Node.js / Supabase (Backend and DB)
+
+---
+
+## 🛠️ Development Status
+
+Hyumane is currently in **active development** with version 1 focused on:
+- Profile creation and zk-based human verification
+- Social feed and interaction features
+- Bot-proof sign-in system
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 🤝 Join Us
+
+Interested in building the future of human-first social media?  
+Open issues, submit PRs, or reach out — we're building this together.
+
+---
