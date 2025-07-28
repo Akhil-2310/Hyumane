@@ -10,6 +10,10 @@ Hyumane is more than just another social network. It is a **digital space for au
 
 ---
 
+## [Demo Video](https://www.loom.com/share/5fe78b179c8a48a69db4a1d025792261)
+
+---
+
 ## 🎯 Mission
 
 We are on a mission to foster **genuine human interaction and connection** amidst the overwhelming rise of AI-generated content and bots.
