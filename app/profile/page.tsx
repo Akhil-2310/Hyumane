@@ -139,7 +139,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Loading profile...</p>
+          <p className="text-sm text-black">Loading profile...</p>
         </div>
       </div>
     )
@@ -154,16 +154,16 @@ export default function ProfilePage() {
             Hyumane
           </Link>
           <div className="flex items-center space-x-4">
-            <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
+            <Link href="/feed" className="font-medium text-black hover:text-black">
               Feed
             </Link>
-            <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
+            <Link href="/chat" className="font-medium text-black hover:text-black">
               Chat
             </Link>
-            <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
+            <Link href="/discover" className="font-medium text-black hover:text-black">
               Discover
             </Link>
-            <Link href="/profile" className="font-medium" style={{ color: "#1c7f8f" }}>
+            <Link href="/profile" className="font-medium text-black">
               Profile
             </Link>
           </div>
@@ -195,7 +195,7 @@ export default function ProfilePage() {
 
               {/* Username and Verification */}
               <div className="mb-4">
-                <h1 className="text-3xl font-bold flex items-center justify-center gap-2">
+                <h1 className="text-3xl font-bold flex items-center justify-center gap-2 text-black">
                   @{currentUser.username}
                   {currentUser.isVerified && <span className="text-green-600">✓</span>}
                 </h1>
@@ -204,27 +204,27 @@ export default function ProfilePage() {
               {/* Follow Stats */}
               <div className="flex justify-center space-x-8 mb-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: "#1c7f8f" }}>{followStats.followers}</div>
-                  <div className="text-gray-600 text-sm">Followers</div>
+                  <div className="text-2xl font-bold text-black">{followStats.followers}</div>
+                  <div className="text-black text-sm">Followers</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: "#1c7f8f" }}>{followStats.following}</div>
-                  <div className="text-gray-600 text-sm">Following</div>
+                  <div className="text-2xl font-bold text-black">{followStats.following}</div>
+                  <div className="text-black text-sm">Following</div>
                 </div>
               </div>
 
               {/* Bio */}
               {currentUser.bio && (
                 <div className="mb-6">
-                  <p className="text-gray-700 text-lg">{currentUser.bio}</p>
+                  <p className="text-black text-lg">{currentUser.bio}</p>
                 </div>
               )}
 
               {/* Interests */}
               {currentUser.interests && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Interests</h3>
-                  <p className="text-gray-600">{currentUser.interests}</p>
+                  <h3 className="text-lg font-semibold mb-2 text-black">Interests</h3>
+                  <p className="text-black">{currentUser.interests}</p>
                 </div>
               )}
 
@@ -242,13 +242,13 @@ export default function ProfilePage() {
           // Edit Mode
           <div className="bg-white rounded-lg shadow-lg p-8">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-2">Edit Profile</h1>
-              <p className="text-gray-600">Update your Hyumane identity</p>
+              <h1 className="text-3xl font-bold mb-2 text-black">Edit Profile</h1>
+              <p className="text-black">Update your Hyumane identity</p>
             </div>
 
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium mb-2">
+                <label htmlFor="username" className="block text-sm font-medium mb-2 text-black">
                   Username
                 </label>
                 <input
@@ -263,7 +263,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="bio" className="block text-sm font-medium mb-2">
+                <label htmlFor="bio" className="block text-sm font-medium mb-2 text-black">
                   Bio
                 </label>
                 <textarea
@@ -277,7 +277,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="interests" className="block text-sm font-medium mb-2">
+                <label htmlFor="interests" className="block text-sm font-medium mb-2 text-black">
                   Interests
                 </label>
                 <input
@@ -291,7 +291,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="avatar" className="block text-sm font-medium mb-2">
+                <label htmlFor="avatar" className="block text-sm font-medium mb-2 text-black">
                   Profile Picture
                 </label>
                 <div className="flex items-center space-x-4">
@@ -311,7 +311,7 @@ export default function ProfilePage() {
                     {avatarFile ? "Change file" : "Choose file"}
                   </label>
 
-                  <span className="text-sm text-gray-600 italic truncate max-w-[160px]">
+                  <span className="text-sm text-black italic truncate max-w-[160px]">
                     {avatarFile ? avatarFile.name : "No file chosen"}
                   </span>
                 </div>
@@ -346,7 +346,7 @@ export default function ProfilePage() {
                       interests: currentUser.interests,
                     })
                   }}
-                  className="flex-1 py-3 px-4 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="flex-1 py-3 px-4 rounded-lg font-medium border border-gray-300 text-black hover:bg-gray-50"
                 >
                   Cancel
                 </button>
