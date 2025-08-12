@@ -77,7 +77,7 @@ export default function VerifyPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Loading...</p>
+          <p className="text-sm text-black">Loading...</p>
         </div>
       </div>
     )
@@ -91,8 +91,8 @@ export default function VerifyPage() {
             <Link href="/" className="text-2xl font-bold" style={{ color: "#1c7f8f" }}>
               Hyumane
             </Link>
-            <h1 className="text-2xl font-bold mt-4 mb-2">Verify Your Identity</h1>
-            <p className="text-gray-600">Scan this QR code with the Self app to verify you're a real human</p>
+            <h1 className="text-2xl font-bold mt-4 mb-2 text-black">Verify Your Identity</h1>
+            <p className="text-black">Scan this QR code with the Self app to verify you're a real human</p>
           </div>
 
           {!isVerified ? (
@@ -113,14 +113,14 @@ export default function VerifyPage() {
               )}
 
               <div className="text-center mb-4">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-black">
                   Your passport data is encrypted and only used for verification
                 </p>
               </div>
 
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-sm mb-2">How it works:</h3>
-                <ol className="text-xs text-gray-600 space-y-1">
+                <h3 className="font-semibold text-sm mb-2 text-black">How it works:</h3>
+                <ol className="text-xs text-black space-y-1">
                   <li>1. Download the Self app</li>
                   <li>2. Scan your passport with the app</li>
                   <li>3. Scan the QR code above</li>
@@ -128,7 +128,7 @@ export default function VerifyPage() {
                 </ol>
               </div>
 
-              <p className="text-xs text-gray-500 mt-4">
+              <p className="text-xs text-black mt-4">
                 User ID: {userId.substring(0, 8)}...
               </p>
             </div>
@@ -140,8 +140,8 @@ export default function VerifyPage() {
               >
                 <span className="text-2xl text-white">✓</span>
               </div>
-              <h2 className="text-xl font-bold mb-2">Verification Complete!</h2>
-              <p className="text-gray-600 mb-6">Welcome to Hyumane. You're now verified as a real human.</p>
+              <h2 className="text-xl font-bold mb-2 text-black">Verification Complete!</h2>
+              <p className="text-black mb-6">Welcome to Hyumane. You're now verified as a real human.</p>
               
               <button
                 onClick={handleContinue}
