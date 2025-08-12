@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { getPosts, createPost, getUserProfile, isFollowing, followUser, unfollowUser, likePost, unlikePost, createReply, getReplies } from "@/lib/supabase-actions"
+import { getPosts, createPost, getUserProfile, isFollowing, followUser, unfollowUser, likePost, unlikePost, createReply, getReplies, uploadPostImage } from "@/lib/supabase-actions"
 import { supabase } from "@/lib/supabase"
 
 interface Post {
@@ -16,6 +16,7 @@ interface Post {
   likes: number
   isLiked: boolean
   replies: number
+  image_url: string | null
 }
 
 interface Reply {
@@ -46,6 +47,11 @@ export default function FeedPage() {
   const [replyText, setReplyText] = useState("")
   const [showReplies, setShowReplies] = useState<Record<string, boolean>>({})
   const [replies, setReplies] = useState<Record<string, Reply[]>>({})
+  const [activeTab, setActiveTab] = useState<'following' | 'everyone'>('following')
+  const [isTabLoading, setIsTabLoading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isPosting, setIsPosting] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -56,7 +62,7 @@ export default function FeedPage() {
     if (currentUser) {
       loadPosts()
     }
-  }, [currentUser])
+  }, [currentUser, activeTab])
 
   // Real-time subscription for likes
   useEffect(() => {
@@ -157,7 +163,8 @@ export default function FeedPage() {
 
   const loadPosts = async () => {
     try {
-      const fetchedPosts = await getPosts(currentUser?.id)
+      setIsTabLoading(true)
+      const fetchedPosts = await getPosts(currentUser?.id, activeTab === 'following')
       setPosts(fetchedPosts)
       
       // Check following status for all post authors
@@ -174,6 +181,7 @@ export default function FeedPage() {
       console.error("Error loading posts:", error)
     } finally {
       setIsLoading(false)
+      setIsTabLoading(false)
     }
   }
 
@@ -189,33 +197,60 @@ export default function FeedPage() {
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setImageFile(file)
+    if (file) {
+      setImagePreview(URL.createObjectURL(file))
+    } else {
+      setImagePreview(null)
+    }
+  }
+
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim() || !currentUser) return;
+    if ((!newPost.trim() && !imageFile) || !currentUser) return;
 
-    // Optimistic UI update with real user data
-    const tempId = Date.now().toString();
-    const optimisticPost: Post = {
-      id: tempId,
-      content: newPost.trim(),
-      username: currentUser.username,
-      avatar: currentUser.avatar_url,
-      author_id: currentUser.id,
-      created_at: new Date().toISOString(),
-      likes: 0,
-      isLiked: false,
-      replies: 0,
-    };
-    setPosts([optimisticPost, ...posts]);
-    setNewPost("");
+    setIsPosting(true);
 
     try {
-      await createPost(optimisticPost.content, currentUser.id);
+      let imageUrl: string | undefined;
+      if (imageFile) {
+        imageUrl = await uploadPostImage(imageFile, currentUser.id);
+      }
+
+      // Optimistic UI update with real user data
+      const tempId = Date.now().toString();
+      const optimisticPost: Post = {
+        id: tempId,
+        content: newPost.trim(),
+        username: currentUser.username,
+        avatar: currentUser.avatar_url,
+        author_id: currentUser.id,
+        created_at: new Date().toISOString(),
+        likes: 0,
+        isLiked: false,
+        replies: 0,
+        image_url: imageUrl || null,
+      };
+      setPosts([optimisticPost, ...posts]);
+      setNewPost("");
+      setImageFile(null);
+      setImagePreview(null);
+
+      await createPost(optimisticPost.content, currentUser.id, imageUrl);
       loadPosts();
     } catch (error) {
       console.error("Error creating post:", error);
       // Revert optimistic update on error
-      setPosts(posts.filter(p => p.id !== tempId));
+      setPosts(posts.filter(p => p.id !== Date.now().toString()));
+    } finally {
+      setIsPosting(false);
     }
   }
 
@@ -358,7 +393,7 @@ export default function FeedPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Loading...</p>
+          <p className="text-sm text-black">Loading...</p>
         </div>
       </div>
     )
@@ -373,6 +408,20 @@ export default function FeedPage() {
             Hyumane
           </Link>
           <div className="flex items-center space-x-4">
+         
+            <Link href="/feed" className="font-medium" style={{ color: "#1c7f8f" }}>
+              Feed
+            </Link>
+            <Link href="/chat" className="font-medium text-black hover:text-black">
+              Chat
+            </Link>
+            <Link href="/discover" className="font-medium text-black hover:text-black">
+              Discover
+            </Link>
+            
+            <Link href="/profile" className="font-medium text-black hover:text-black">
+              Profile
+            </Link>
             <div className="flex items-center space-x-2">
               {currentUser.avatar_url ? (
                 <img src={currentUser.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
@@ -384,27 +433,47 @@ export default function FeedPage() {
                   <span className="text-white text-sm font-bold">{currentUser.username.charAt(0).toUpperCase()}</span>
                 </div>
               )}
-              <span className="text-sm text-gray-600">
-                @{currentUser.username} {currentUser.isVerified && <span className="text-green-600">✓</span>}
-              </span>
+             
             </div>
-            <Link href="/feed" className="font-medium" style={{ color: "#1c7f8f" }}>
-              Feed
-            </Link>
-            <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
-              Chat
-            </Link>
-            <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
-              Discover
-            </Link>
-            <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
-              Profile
-            </Link>
           </div>
         </div>
       </nav>
 
       <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm mb-6">
+          <div className="flex border-b">
+            <button
+              onClick={() => setActiveTab('following')}
+              className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
+                activeTab === 'following'
+                  ? 'text-white border-b-2'
+                  : 'text-black hover:bg-gray-50'
+              }`}
+              style={activeTab === 'following' ? { 
+                backgroundColor: "#1c7f8f", 
+                borderBottomColor: "#1c7f8f" 
+              } : {}}
+            >
+              Following
+            </button>
+            <button
+              onClick={() => setActiveTab('everyone')}
+              className={`flex-1 py-4 px-6 text-center font-medium transition-colors ${
+                activeTab === 'everyone'
+                  ? 'text-white border-b-2'
+                  : 'text-black hover:bg-gray-50'
+              }`}
+              style={activeTab === 'everyone' ? { 
+                backgroundColor: "#1c7f8f", 
+                borderBottomColor: "#1c7f8f" 
+              } : {}}
+            >
+              Everyone
+            </button>
+          </div>
+        </div>
+
         {/* Create Post */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <form onSubmit={handleCreatePost}>
@@ -415,14 +484,59 @@ export default function FeedPage() {
               className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
             />
-            <div className="flex justify-end mt-3">
+            
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="mt-3 relative">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="max-w-full h-64 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-3">
+              <div className="flex items-center space-x-3">
+                {/* Image Upload Button */}
+                <input
+                  type="file"
+                  id="post-image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="post-image"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-black border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {imageFile ? "Change Image" : "Add Image"}
+                </label>
+                
+                {imageFile && (
+                  <span className="text-sm text-black">
+                    {imageFile.name}
+                  </span>
+                )}
+              </div>
+              
               <button
                 type="submit"
-                disabled={!newPost.trim()}
+                disabled={(!newPost.trim() && !imageFile) || isPosting}
                 className="px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
                 style={{ backgroundColor: "#1c7f8f", color: "white" }}
               >
-                Post
+                {isPosting ? "Posting..." : "Post"}
               </button>
             </div>
           </form>
@@ -430,14 +544,26 @@ export default function FeedPage() {
 
         {/* Posts Feed */}
         <div className="space-y-6">
-          {isLoading ? (
+          {(isLoading || isTabLoading) ? (
             <div className="text-center py-8">
               <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto"></div>
+              <p className="text-sm text-black mt-2">
+                {isTabLoading ? `Loading ${activeTab === 'following' ? 'following' : 'everyone'} posts...` : 'Loading...'}
+              </p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p className="mb-2">No posts yet. Be the first to share something!</p>
-              <p className="text-sm">Welcome to Hyumane - where real humans connect authentically.</p>
+            <div className="text-center py-8 text-black">
+              {activeTab === 'following' ? (
+                <>
+                  <p className="mb-2">No posts from people you follow yet.</p>
+                  <p className="text-sm">Follow some users in the Discover tab to see their posts here!</p>
+                </>
+              ) : (
+                <>
+                  <p className="mb-2">No posts yet. Be the first to share something!</p>
+                  <p className="text-sm">Welcome to Hyumane - where real humans connect authentically.</p>
+                </>
+              )}
             </div>
           ) : (
             posts.map((post) => (
@@ -455,11 +581,11 @@ export default function FeedPage() {
                       </div>
                     )}
                     <div>
-                      <div className="font-medium flex items-center">
+                      <div className="font-medium flex items-center text-black">
                         @{post.username}
                         <span className="ml-1 text-green-600">✓</span>
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-black">
                         {new Date(post.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -480,10 +606,25 @@ export default function FeedPage() {
                     </button>
                   )}
                 </div>
-                <p className="text-gray-800 mb-4">{post.content}</p>
+                
+                {/* Post Content */}
+                {post.content && (
+                  <p className="text-black mb-4">{post.content}</p>
+                )}
+                
+                {/* Post Image */}
+                {post.image_url && (
+                  <div className="mb-4">
+                    <img
+                      src={post.image_url}
+                      alt="Post image"
+                      className="w-full max-h-96 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
                 
                 {/* Action Buttons */}
-                <div className="flex items-center space-x-6 text-sm text-gray-500 border-t pt-3">
+                <div className="flex items-center space-x-6 text-sm text-black border-t pt-3">
                   <button 
                     onClick={() => handleLike(post.id, post.isLiked)}
                     className={`flex items-center space-x-1 transition-colors ${
@@ -523,7 +664,7 @@ export default function FeedPage() {
                     <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={() => setReplyingTo(null)}
-                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                        className="px-3 py-1 text-sm text-black hover:text-gray-800"
                       >
                         Cancel
                       </button>
@@ -557,18 +698,18 @@ export default function FeedPage() {
                           )}
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium text-sm">@{reply.username}</span>
+                              <span className="font-medium text-sm text-black">@{reply.username}</span>
                               <span className="text-green-600 text-xs">✓</span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-black">
                                 {new Date(reply.created_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-800 mt-1">{reply.content}</p>
+                            <p className="text-sm text-black mt-1">{reply.content}</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4 text-gray-500 text-sm">
+                      <div className="text-center py-4 text-black text-sm">
                         {replies[post.id] ? "No replies yet" : "Loading replies..."}
                       </div>
                     )}
