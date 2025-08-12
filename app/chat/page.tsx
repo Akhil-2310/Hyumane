@@ -240,21 +240,7 @@ function ChatPageContent() {
             Hyumane
           </Link>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {currentUser.avatar_url ? (
-                <img src={currentUser.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: "#1c7f8f" }}
-                >
-                  <span className="text-white text-sm font-bold">{currentUser.username.charAt(0).toUpperCase()}</span>
-                </div>
-              )}
-              <span className="text-sm text-gray-600">
-                @{currentUser.username} {currentUser.isVerified && <span className="text-green-600">✓</span>}
-              </span>
-            </div>
+          
             <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
               Feed
             </Link>
@@ -267,6 +253,18 @@ function ChatPageContent() {
             <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
               Profile
             </Link>
+            <div className="flex items-center space-x-2">
+              {currentUser.avatar_url ? (
+                <img src={currentUser.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "#1c7f8f" }}
+                >
+                  <span className="text-white text-sm font-bold">{currentUser.username.charAt(0).toUpperCase()}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>
