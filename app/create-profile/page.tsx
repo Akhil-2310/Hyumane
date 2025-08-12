@@ -83,8 +83,8 @@ export default function CreateProfilePage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Create Your Profile</h1>
-            <p className="text-gray-600">Set up your Hyumane identity</p>
+            <h1 className="text-3xl font-bold mb-2 text-black">Create Your Profile</h1>
+            <p className="text-black">Set up your Hyumane identity</p>
             
             {verifiedUserData && (
               <div 
@@ -99,7 +99,7 @@ export default function CreateProfilePage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-2">
+              <label htmlFor="username" className="block text-sm font-medium mb-2 text-black">
                 Username
               </label>
               <input
@@ -115,7 +115,7 @@ export default function CreateProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="bio" className="block text-sm font-medium mb-2">
+              <label htmlFor="bio" className="block text-sm font-medium mb-2 text-black">
                 Bio
               </label>
               <textarea
@@ -130,7 +130,7 @@ export default function CreateProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="interests" className="block text-sm font-medium mb-2">
+              <label htmlFor="interests" className="block text-sm font-medium mb-2 text-black">
                 Interests
               </label>
               <input
@@ -145,7 +145,7 @@ export default function CreateProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="avatar" className="block text-sm font-medium mb-2">
+              <label htmlFor="avatar" className="block text-sm font-medium mb-2 text-black">
                 Profile Picture
               </label>
               <div className="flex items-center space-x-4">
@@ -168,7 +168,7 @@ export default function CreateProfilePage() {
                 </label>
 
                 {/* File name or placeholder */}
-                <span className="text-sm text-gray-600 italic truncate max-w-[160px]">
+                <span className="text-sm text-black italic truncate max-w-[160px]">
                   {avatarFile ? avatarFile.name : "No file chosen"}
                 </span>
               </div>
