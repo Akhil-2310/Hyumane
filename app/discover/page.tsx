@@ -161,7 +161,7 @@ export default function DiscoverPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff6c9" }}>
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-gray-600">Loading...</p>
+          <p className="text-sm text-black">Loading...</p>
         </div>
       </div>
     )
@@ -176,6 +176,18 @@ export default function DiscoverPage() {
             Hyumane
           </Link>
           <div className="flex items-center space-x-4">
+            <Link href="/feed" className="font-medium text-black hover:text-black">
+              Feed
+            </Link>
+            <Link href="/chat" className="font-medium text-black hover:text-black">
+              Chat
+            </Link>
+            <Link href="/discover" className="font-medium" style={{ color: "#1c7f8f" }}>
+              Discover
+            </Link>
+            <Link href="/profile" className="font-medium text-black hover:text-black">
+              Profile
+            </Link>
             <div className="flex items-center space-x-2">
               {currentUser.avatar_url ? (
                 <img src={currentUser.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
@@ -187,37 +199,22 @@ export default function DiscoverPage() {
                   <span className="text-white text-sm font-bold">{currentUser.username.charAt(0).toUpperCase()}</span>
                 </div>
               )}
-              <span className="text-sm text-gray-600">
-                @{currentUser.username} {currentUser.isVerified && <span className="text-green-600">✓</span>}
-              </span>
             </div>
-            <Link href="/feed" className="font-medium text-gray-600 hover:text-gray-900">
-              Feed
-            </Link>
-            <Link href="/chat" className="font-medium text-gray-600 hover:text-gray-900">
-              Chat
-            </Link>
-            <Link href="/discover" className="font-medium" style={{ color: "#1c7f8f" }}>
-              Discover
-            </Link>
-            <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
-              Profile
-            </Link>
           </div>
         </div>
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Discover People</h1>
-          <p className="text-gray-600">Find and connect with verified humans on Hyumane</p>
+          <h1 className="text-3xl font-bold mb-2 text-black">Discover People</h1>
+          <p className="text-black">Find and connect with verified humans on Hyumane</p>
         </div>
 
         {/* Search Bar */}
         <div className="mb-8">
           <div className="relative max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -226,7 +223,7 @@ export default function DiscoverPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users by name or bio..."
-              className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+              className="block w-full pl-10 pr-10 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 placeholder:text-black"
               onFocus={(e) => {
                 e.target.style.borderColor = "#1c7f8f";
                 e.target.style.boxShadow = "0 0 0 2px rgba(28, 127, 143, 0.2)";
@@ -249,7 +246,7 @@ export default function DiscoverPage() {
           </div>
           
           {searchQuery && (
-            <div className="mt-3 text-sm text-gray-600">
+            <div className="mt-3 text-sm text-black">
               {filteredUsers.length === 0 ? (
                 <p>No users found matching "{searchQuery}"</p>
               ) : (
@@ -261,14 +258,14 @@ export default function DiscoverPage() {
 
         {filteredUsers.length === 0 && !searchQuery ? (
           <div className="text-center py-12">
-            <div className="text-gray-500">
+            <div className="text-black">
               <p className="mb-2">No other users found</p>
               <p className="text-sm">Be the first to invite your friends to Hyumane!</p>
             </div>
           </div>
         ) : filteredUsers.length === 0 && searchQuery ? (
           <div className="text-center py-12">
-            <div className="text-gray-500">
+            <div className="text-black">
               <p className="mb-2">No users found</p>
               <p className="text-sm">Try a different search term or browse all users</p>
               <button
@@ -285,38 +282,44 @@ export default function DiscoverPage() {
             {filteredUsers.map((user) => (
               <div key={user.verified_user_id} className="bg-white rounded-lg shadow-sm p-6">
                 <div className="text-center">
-                  {/* Avatar */}
-                  <div className="mb-4">
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt="Profile"
-                        className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-gray-100"
-                      />
-                    ) : (
-                      <div
-                        className="w-20 h-20 rounded-full mx-auto flex items-center justify-center border-2 border-gray-100"
-                        style={{ backgroundColor: "#1c7f8f" }}
-                      >
-                        <span className="text-white text-2xl font-bold">{user.username.charAt(0).toUpperCase()}</span>
+                  {/* Clickable Profile Section */}
+                  <div 
+                    className="cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors mb-4"
+                    onClick={() => router.push(`/profile/${user.verified_user_id}`)}
+                  >
+                    {/* Avatar */}
+                    <div className="mb-4">
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt="Profile"
+                          className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-gray-100"
+                        />
+                      ) : (
+                        <div
+                          className="w-20 h-20 rounded-full mx-auto flex items-center justify-center border-2 border-gray-100"
+                          style={{ backgroundColor: "#1c7f8f" }}
+                        >
+                          <span className="text-white text-2xl font-bold">{user.username.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Username and Verification */}
+                    <div className="mb-3">
+                      <h3 className="text-lg font-semibold flex items-center justify-center gap-1 text-black">
+                        @{user.username}
+                        {user.is_verified && <span className="text-green-600">✓</span>}
+                      </h3>
+                    </div>
+
+                    {/* Bio */}
+                    {user.bio && (
+                      <div className="mb-4">
+                        <p className="text-black text-sm line-clamp-2">{user.bio}</p>
                       </div>
                     )}
                   </div>
-
-                  {/* Username and Verification */}
-                  <div className="mb-3">
-                    <h3 className="text-lg font-semibold flex items-center justify-center gap-1">
-                      @{user.username}
-                      {user.is_verified && <span className="text-green-600">✓</span>}
-                    </h3>
-                  </div>
-
-                  {/* Bio */}
-                  {user.bio && (
-                    <div className="mb-4">
-                      <p className="text-gray-600 text-sm line-clamp-2">{user.bio}</p>
-                    </div>
-                  )}
 
                   {/* Action Buttons */}
                   <div className="space-y-2">
@@ -334,7 +337,7 @@ export default function DiscoverPage() {
                     
                     <button
                       onClick={() => handleMessage(user.verified_user_id)}
-                      className="w-full py-2 px-4 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full py-2 px-4 rounded-lg font-medium border border-gray-300 text-black hover:bg-gray-50 transition-colors"
                     >
                       Message
                     </button>
