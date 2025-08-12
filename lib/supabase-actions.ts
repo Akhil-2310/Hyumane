@@ -15,6 +15,21 @@ export async function uploadAvatar(file: File, verified_user_id: string) {
   return data.publicUrl as string;
 }
 
+export async function uploadPostImage(file: File, userId: string) {
+  const fileExt = file.name.split('.').pop();
+  const timestamp = Date.now();
+  const filePath = `${userId}/${timestamp}.${fileExt}`;
+
+  const { error } = await supabase.storage.from('post-images').upload(filePath, file, {
+    cacheControl: '3600',
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('post-images').getPublicUrl(filePath);
+  return data.publicUrl as string;
+}
+
 export async function createProfile(profileData: {
   username: string;
   bio: string;
@@ -61,14 +76,14 @@ export async function updateProfile(userId: string, profileData: {
   return data;
 }
 
-export async function getPosts(currentUserId?: string) {
+export async function getPosts(currentUserId?: string, followingOnly: boolean = true) {
   let postsQuery = supabase
     .from("posts")
     .select("*")
     .order("created_at", { ascending: false });
 
-  // If user is provided, check if they follow anyone
-  if (currentUserId) {
+  // If user is provided and followingOnly is true, check if they follow anyone
+  if (currentUserId && followingOnly) {
     const { data: followedUsers, error: followError } = await supabase
       .from("follows")
       .select("following_id")
@@ -135,15 +150,16 @@ export async function getPosts(currentUserId?: string) {
       likes: likeCount || 0,
       isLiked: isLiked,
       replies: replyCount || 0,
+      image_url: post.image_url || null,
     })
   }
   
   return transformedPosts;
 }
 
-export async function createPost(content: string, userId: string) {
-  if (!content.trim() || !userId) {
-    throw new Error('Content and user ID are required')
+export async function createPost(content: string, userId: string, imageUrl?: string) {
+  if ((!content.trim() && !imageUrl) || !userId) {
+    throw new Error('Content or image and user ID are required')
   }
 
   const { data, error } = await supabase.from("posts").insert([
@@ -152,6 +168,7 @@ export async function createPost(content: string, userId: string) {
       author_id: userId,
       created_at: new Date().toISOString(),
       likes: 0,
+      image_url: imageUrl || null,
     },
   ])
 
