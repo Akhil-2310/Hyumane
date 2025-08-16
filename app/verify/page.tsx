@@ -31,7 +31,6 @@ export default function VerifyPage() {
         endpointType: "https",
         userIdType: "uuid",
         userDefinedData: "Welcome to Hyumane!",
-        devMode: true,
         disclosures: {
           minimumAge: 5,
           ofac: false,
