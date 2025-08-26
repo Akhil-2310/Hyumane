@@ -9,7 +9,7 @@ export default function LandingPage() {
   const handleLaunchApp = async () => {
     // Check if user already has verification data
     const verificationData = localStorage.getItem('verifiedUserData')
-    
+
     if (!verificationData) {
       // No verification data, go to verify page
       router.push('/verify')
@@ -18,7 +18,7 @@ export default function LandingPage() {
 
     try {
       const parsedData = JSON.parse(verificationData)
-      
+
       if (!parsedData.userId || !parsedData.isVerified) {
         // Invalid verification data, go to verify page
         router.push('/verify')
@@ -27,7 +27,7 @@ export default function LandingPage() {
 
       // Check if user has a profile
       const profileData = await getUserProfile(parsedData.userId)
-      
+
       if (!profileData) {
         // Has verification but no profile, go to create profile
         router.push('/create-profile')
@@ -52,14 +52,28 @@ export default function LandingPage() {
           <span className="text-2xl font-bold">Hyumane</span>
         </div>
 
-        <button
-          onClick={handleLaunchApp}
-          className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-          style={{ backgroundColor: "#1c7f8f", color: "white" }}
-        >
-          Launch App
-        </button>
+        <div className="flex items-center gap-3">
+        <a
+            href="https://hyumane-mock.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
+            style={{ backgroundColor: "#1c7f8f", color: "white" }}
+          >
+            For Mock Passports
+          </a>
+          <button
+            onClick={handleLaunchApp}
+            className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
+            style={{ backgroundColor: "#1c7f8f", color: "white" }}
+          >
+            Launch App
+          </button>
+
+       
+        </div>
       </nav>
+
 
 
       {/* Hero Section */}
