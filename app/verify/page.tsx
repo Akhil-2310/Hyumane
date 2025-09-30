@@ -25,10 +25,10 @@ export default function VerifyPage() {
         version: 2,
         appName: "Hyumane",
         scope: "hyumane",
-        endpoint: "https://hyumane.vercel.app/api/verify",
+        endpoint: "0x7a465ce66624881331189c9a72ff130de979435d",
         logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
         userId: newUserId,
-        endpointType: "https",
+        endpointType: "celo",
         userIdType: "uuid",
         userDefinedData: "Welcome to Hyumane!",
         disclosures: {
@@ -121,7 +121,7 @@ export default function VerifyPage() {
                 <h3 className="font-semibold text-sm mb-2 text-black">How it works:</h3>
                 <ol className="text-xs text-black space-y-1">
                   <li>1. Download the Self app</li>
-                  <li>2. Scan your passport with the app</li>
+                  <li>2. Scan your passport/aadhar with the app</li>
                   <li>3. Scan the QR code above</li>
                   <li>4. Get verified as a real human</li>
                 </ol>
