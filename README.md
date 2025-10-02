@@ -14,6 +14,8 @@ Hyumane is more than just another social network. It is a **digital space for au
 
 ---
 
+## [Contract Address](https://celoscan.io/address/0x7a465ce66624881331189c9a72ff130de979435d)
+
 ## 🎯 Mission
 
 We are on a mission to foster **genuine human interaction and connection** amidst the overwhelming rise of AI-generated content and bots.
