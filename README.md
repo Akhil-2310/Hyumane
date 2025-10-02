@@ -2,17 +2,14 @@
 
 **Hyumane** is a social media platform built for **real human connections** — by humans, for humans. Every profile is verified through **zero-knowledge (zk) technology** to ensure that only **real humans** can sign in and participate.
 
----
 
 ## 📌 Description
 
 Hyumane is more than just another social network. It is a **digital space for authentic interaction**, focused on **human-first verification**. With the growing presence of bots and AI-generated content, Hyumane aims to reclaim the internet for **actual people**.
 
----
 
 ## [Demo Video](https://www.loom.com/share/5fe78b179c8a48a69db4a1d025792261)
 
----
 
 ## [Contract Address](https://celoscan.io/address/0x7a465ce66624881331189c9a72ff130de979435d)
 
