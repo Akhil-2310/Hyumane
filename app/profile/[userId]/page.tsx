@@ -196,6 +196,9 @@ export default function UserProfilePage() {
             <Link href="/discover" className="font-medium text-black hover:text-black">
               Discover
             </Link>
+            <Link href="/events" className="font-medium text-black hover:text-black">
+              Events
+            </Link>
             <Link href="/profile" className="font-medium text-black hover:text-black">
               Profile
             </Link>

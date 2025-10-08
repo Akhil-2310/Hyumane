@@ -185,6 +185,9 @@ export default function DiscoverPage() {
             <Link href="/discover" className="font-medium" style={{ color: "#1c7f8f" }}>
               Discover
             </Link>
+            <Link href="/events" className="font-medium text-black hover:text-black">
+              Events
+            </Link>
             <Link href="/profile" className="font-medium text-black hover:text-black">
               Profile
             </Link>
