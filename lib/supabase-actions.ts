@@ -351,6 +351,7 @@ export async function getChats(userId: string) {
       chatsWithUserInfo.push({
         id: chat.id,
         name: profile.username,
+        avatar_url: profile.avatar_url,
         lastMessage: chat.last_message || "No messages yet",
         timestamp: new Date(chat.updated_at).toLocaleDateString(),
       })
@@ -417,6 +418,16 @@ export async function sendMessage(chatId: string, content: string, senderId: str
     console.error("Error sending message:", error)
     throw error
   }
+
+  // Update the chat's last_message and updated_at
+  await supabase
+    .from("chats")
+    .update({
+      last_message: content.trim(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", chatId)
+
   return data
 }
 

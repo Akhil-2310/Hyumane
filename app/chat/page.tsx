@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 interface Chat {
   id: string
   name: string
+  avatar_url: string | null
   lastMessage: string
   timestamp: string
 }
@@ -54,10 +55,10 @@ function ChatPageContent() {
   useEffect(() => {
     // Check if there's a chatId in the URL parameters
     const chatId = searchParams.get('chatId')
-    if (chatId && !selectedChat) {
+    if (chatId) {
       setSelectedChat(chatId)
     }
-  }, [searchParams, selectedChat])
+  }, [searchParams])
 
   useEffect(() => {
     if (selectedChat && currentUser) {
@@ -204,17 +205,28 @@ function ChatPageContent() {
     if (!newMessage.trim() || !selectedChat || !currentUser) return
 
     const messageText = newMessage.trim()
+    const timestamp = new Date().toLocaleTimeString()
+    
+    // Optimistically add the message to the UI
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content: messageText,
+      sender: currentUser.username,
+      sender_id: currentUser.id,
+      timestamp: timestamp,
+      isOwn: true
+    }
+    
+    setMessages(prevMessages => [...prevMessages, optimisticMessage])
     setNewMessage("") // Clear input immediately for better UX
 
     try {
       await sendMessage(selectedChat, messageText, currentUser.id)
-      // Note: We don't need to manually refresh messages anymore!
-      // The real-time subscription will automatically add the new message
-      
-      // We also don't need to refresh chats manually
-      // The chat update subscription will handle that too
+      // The real-time subscription will replace the optimistic message with the real one
     } catch (error) {
       console.error("Error sending message:", error)
+      // Remove optimistic message on error
+      setMessages(prevMessages => prevMessages.filter(m => m.id !== optimisticMessage.id))
       // Restore message text if sending failed
       setNewMessage(messageText)
     }
@@ -249,6 +261,9 @@ function ChatPageContent() {
             </Link>
             <Link href="/discover" className="font-medium text-gray-600 hover:text-gray-900">
               Discover
+            </Link>
+            <Link href="/events" className="font-medium text-gray-600 hover:text-gray-900">
+              Events
             </Link>
             <Link href="/profile" className="font-medium text-gray-600 hover:text-gray-900">
               Profile
@@ -287,18 +302,29 @@ function ChatPageContent() {
                   chats.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => setSelectedChat(chat.id)}
+                      onClick={() => {
+                        setSelectedChat(chat.id)
+                        router.push(`/chat?chatId=${chat.id}`, { scroll: false })
+                      }}
                       className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
                         selectedChat === chat.id ? "bg-blue-50" : ""
                       }`}
                     >
                       <div className="flex items-center">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
-                          style={{ backgroundColor: "#1c7f8f" }}
-                        >
-                          <span className="text-white font-bold">{chat.name.charAt(0).toUpperCase()}</span>
-                        </div>
+                        {chat.avatar_url ? (
+                          <img 
+                            src={chat.avatar_url} 
+                            alt={chat.name}
+                            className="w-10 h-10 rounded-full object-cover mr-3"
+                          />
+                        ) : (
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                            style={{ backgroundColor: "#1c7f8f" }}
+                          >
+                            <span className="text-white font-bold">{chat.name.charAt(0).toUpperCase()}</span>
+                          </div>
+                        )}
                         <div className="flex-1">
                           <div className="font-medium">{chat.name}</div>
                           <div className="text-sm text-gray-500 truncate">{chat.lastMessage}</div>
